@@ -1,0 +1,24 @@
+.class-card {
+  border: 2px solid #0064a4;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 8px 0;
+  width: 260px;
+}
+
+.completed {
+  border-color: #2e8b57;
+  background-color: #e8f6ee;
+}
+
+.in-progress{
+  border-color: #ffa702;
+  background-color: #faf9cb;
+}
+
+.prereqs{
+  margin-left: 30px;
+  border-left: 2px solid #c9d3e0;
+  padding-left: 12px;
+}
+
