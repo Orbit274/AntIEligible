@@ -27,7 +27,7 @@ function ClassCard(props){
     }
   }
 
-  let label = "No yet";
+  let label = "Not yet";
   if(status == "in-progress") label = "In progress";
   if(status == "completed") label = "Completed";
 
