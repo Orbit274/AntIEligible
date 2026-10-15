@@ -1,57 +1,75 @@
+import { ReactFlow, Background, MarkerType, useNodesState } from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 import "./App.css";
 
-import { useState } from "react";
+// Makes one box, so we don't repeat the same fields for every class
+function makeNode(code, x, y) {
+  return {
+    id: code,
+    position: { x: x, y: y },
+    data: { label: code },
+    className: "not-started",
+    sourcePosition: "right", // arrows leave from the right side
+    targetPosition: "left",  // arrows arrive on the left side
+  };
+}
 
+const startingNodes = [
+  // column 1: your goals
+  makeNode("ICS 45J", 0, 0),
+  makeNode("ICS 46", 0, 150),
+  makeNode("ICS 51", 0, 300),
 
-const classes = {
-  "ICS 31":  { name: "Intro to Programming", prereqs: [] },
-  "ICS 32":  { name: "Programming with Software Libraries", prereqs: ["ICS 31"] },
-  "ICS 33":  { name: "Intermediate Programming", prereqs: ["ICS 32"] },
-  "ICS 45C": { name: "Programming in C/C++", prereqs: ["ICS 33"] },
-  "ICS 6B":  { name: "Boolean Logic & Discrete Structures", prereqs: [] },
-  "ICS 46":  { name: "Data Structures", prereqs: ["ICS 45C", "ICS 6B"] },
-};
+  // column 2
+  makeNode("ICS 45C", 300, 75),
+  makeNode("ICS 6B", 300, 250),
 
-function ClassCard(props){
+  // column 3
+  makeNode("ICS 33", 600, 75),
 
-  const [status, setStatus] = useState("not-started");
-  const info = classes[props.code];
+  // column 4
+  makeNode("ICS 32", 900, 75),
+];
 
-  function nextStatus(){
-    if(status == "not-started"){
-      setStatus("in-progress");
-    } else if (status == "in-progress"){
-      setStatus("completed");
-    } else{
-      setStatus("not-started");
-    }
-  }
+const edges = [
+  { id: "45J-33", source: "ICS 45J", target: "ICS 33", animated: true},
+  { id: "46-45C", source: "ICS 46", target: "ICS 45C", animated: true},
+  { id: "46-6B", source: "ICS 46", target: "ICS 6B", animated: true },
+  { id: "51-6B", source: "ICS 51", target: "ICS 6B", animated: false},
+  { id: "45C-33", source: "ICS 45C", target: "ICS 33", animated: false },
+  { id: "33-32", source: "ICS 33", target: "ICS 32", animated: false },
+];
 
-  let label = "Not yet";
-  if(status == "in-progress") label = "In progress";
-  if(status == "completed") label = "Completed";
-
-
-  return (
-    <div>
-      <div className={"class-card " + status} onClick={nextStatus}>
-        <strong>{props.code}</strong>
-        <p>{info.name}</p>
-        <p>{label}</p>
-      </div>
-
-      <div className="prereqs">
-        {info.prereqs.map((p) => (<ClassCard key={p} code = {p}/>))}
-      </div>
-    </div>
-  );
+function nextStatus(status) {
+  if (status === "not-started") return "in-progress";
+  if (status === "in-progress") return "completed";
+  return "not-started";
 }
 
 export default function App() {
+  const [nodes, setNodes, onNodesChange] = useNodesState(startingNodes);
+
+  function handleNodeClick(event, clickedNode) {
+    setNodes(
+      nodes.map((n) => {
+        if (n.id !== clickedNode.id) return n;
+        return { ...n, className: nextStatus(n.className) };
+      })
+    );
+  }
+
   return (
-    <div>
-      <h2>My UCI Classes</h2>
-      <ClassCard code = "ICS 46" />
+    <div style={{ width: "100vw", height: "100vh" }}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onNodeClick={handleNodeClick}
+        defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed } }}
+        fitView
+      >
+        <Background />
+      </ReactFlow>
     </div>
   );
 }
