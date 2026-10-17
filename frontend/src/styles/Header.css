@@ -1,0 +1,31 @@
+#header{
+    display: flex;
+    flex-direction: row;
+    background-color: blue;
+    padding: 5px;
+    align-items: center;
+}
+
+#app-name{
+    margin-left: 10px;
+    color: yellow;
+    font-size: clamp(20px, 2vw, 40px);
+    text-decoration: none;
+}
+
+ul{
+    display: flex;
+    flex-direction: row;
+    list-style: none;
+}
+
+li > a {
+    text-decoration: none;
+    margin: 0px 10px;
+    font-size: clamp(15px, 2vw, 30px);
+    color: yellow;
+}
+
+li > a:hover{
+    color: lightblue;
+}
