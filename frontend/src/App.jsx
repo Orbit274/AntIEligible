@@ -2,7 +2,8 @@ import { ReactFlow, Background, MarkerType, useNodesState } from "@xyflow/react"
 import "@xyflow/react/dist/style.css";
 import "./App.css";
 import Header from "./components/Header";
-
+import CourseDetails from "./components/CourseDetails"
+import { useState } from "react";
 // Makes one box, so we don't repeat the same fields for every class
 function makeNode(code, x, y) {
   return {
@@ -49,8 +50,9 @@ function nextStatus(status) {
 
 export default function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState(startingNodes);
-
+  const [selectedCourse, setSelectedCourse] = useState(null);
   function handleNodeClick(event, clickedNode) {
+    setSelectedCourse(clickedNode.data.id);
     setNodes(
       nodes.map((n) => {
         if (n.id !== clickedNode.id) return n;
@@ -58,10 +60,12 @@ export default function App() {
       })
     );
   }
-
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
       <Header />
+      {(selectedCourse !== null &&
+        <CourseDetails courseId={selectedCourse} />
+      )}
       <ReactFlow
         nodes={nodes}
         edges={edges}
