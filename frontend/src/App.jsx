@@ -2,8 +2,8 @@ import { ReactFlow, Background, MarkerType, useNodesState } from "@xyflow/react"
 import "@xyflow/react/dist/style.css";
 import "./App.css";
 import Header from "./components/Header";
-import CourseDetails from "./components/CourseDetails"
 import { useState } from "react";
+import CourseDetailsPanel from "./components/CourseDetailsPanel";
 // Makes one box, so we don't repeat the same fields for every class
 function makeNode(code, x, y) {
   return {
@@ -51,8 +51,10 @@ function nextStatus(status) {
 export default function App() {
   const [nodes, setNodes, onNodesChange] = useNodesState(startingNodes);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [isVisible, setIsVisible] = useState(false);
   function handleNodeClick(event, clickedNode) {
-    setSelectedCourse(clickedNode.data.id);
+    setSelectedCourse(clickedNode.data.label);
+    setIsVisible(true);
     setNodes(
       nodes.map((n) => {
         if (n.id !== clickedNode.id) return n;
@@ -60,12 +62,14 @@ export default function App() {
       })
     );
   }
+
+  function closePanel(){
+    setIsVisible(false);
+  }
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
       <Header />
-      {(selectedCourse !== null &&
-        <CourseDetails courseId={selectedCourse} />
-      )}
+        <CourseDetailsPanel courseId={selectedCourse} visible={isVisible} onClose={closePanel} />
       <ReactFlow
         nodes={nodes}
         edges={edges}
