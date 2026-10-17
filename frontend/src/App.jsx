@@ -1,6 +1,7 @@
 import { ReactFlow, Background, MarkerType, useNodesState } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./App.css";
+import Header from "./components/Header";
 
 // Makes one box, so we don't repeat the same fields for every class
 function makeNode(code, x, y) {
@@ -60,6 +61,7 @@ export default function App() {
 
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
+      <Header />
       <ReactFlow
         nodes={nodes}
         edges={edges}
