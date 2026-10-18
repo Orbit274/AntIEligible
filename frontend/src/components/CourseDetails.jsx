@@ -9,7 +9,7 @@ function CourseDetails(courseId){
             async function fetchCourse(){
                 try {
                     setError(null);
-                    const response = await axios.get(`http://localhost:3001/api/course/${encodeURIComponent(courseId)}`);
+                    const response = await axios.get(`/api/course/${encodeURIComponent(courseId)}`);
                     setCourse(response.data)
                 } catch (err){
                     console.error("Failed to fetch course:", err);
