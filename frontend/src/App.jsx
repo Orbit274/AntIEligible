@@ -4,18 +4,32 @@ import "./App.css";
 import Header from "./components/Header";
 import { useState } from "react";
 import CourseDetailsPanel from "./components/CourseDetailsPanel";
+import CourseNode from "./components/CourseNode";
+import ResponsesiveGraph from "./components/ResponsiveGraph"
 // Makes one box, so we don't repeat the same fields for every class
 function makeNode(code, x, y) {
   return {
     id: code,
+    type: "courseNode",
     position: { x: x, y: y },
-    data: { label: code },
-    className: "not-started",
-    sourcePosition: "right", // arrows leave from the right side
-    targetPosition: "left",  // arrows arrive on the left side
+    data: { label: code,
+      status: "not-started"
+    },
   };
 }
-
+const nodeTypes = {
+  courseNode : CourseNode,
+}
+//Maps the course node title to the course code in database
+const courseCodeMap = new Map([
+  ["ICS 45J", "I&CSCI45J"],
+  ["ICS 46", "I&CSCI46"],
+  ["ICS 51", "I&CSCI51"],
+  ["ICS 45C", "I&CSCI45C"],
+  ["ICS 6B", "I&CSCI6B"],
+  ["ICS 33", "I&CSCI33"],
+  ["ICS 32", "I&CSCI32"]
+])
 const startingNodes = [
   // column 1: your goals
   makeNode("ICS 45J", 0, 0),
@@ -34,12 +48,12 @@ const startingNodes = [
 ];
 
 const edges = [
-  { id: "45J-33", source: "ICS 45J", target: "ICS 33", animated: true},
-  { id: "46-45C", source: "ICS 46", target: "ICS 45C", animated: true},
-  { id: "46-6B", source: "ICS 46", target: "ICS 6B", animated: true },
-  { id: "51-6B", source: "ICS 51", target: "ICS 6B", animated: false},
-  { id: "45C-33", source: "ICS 45C", target: "ICS 33", animated: false },
-  { id: "33-32", source: "ICS 33", target: "ICS 32", animated: false },
+  { id: "33-45J", source: "ICS 33", target: "ICS 45J", animated: true},
+  { id: "45C-46", source: "ICS 45C", target: "ICS 46", animated: true},
+  { id: "6B-46", source: "ICS 6B", target: "ICS 46", animated: true },
+  { id: "6B-51", source: "ICS 6B", target: "ICS 51", animated: false},
+  { id: "33-45C", source: "ICS 33", target: "ICS 45C", animated: false },
+  { id: "32-33", source: "ICS 32", target: "ICS 33", animated: false },
 ];
 
 function nextStatus(status) {
@@ -53,14 +67,14 @@ export default function App() {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
   function handleNodeClick(event, clickedNode) {
-    setSelectedCourse(clickedNode.data.label);
+    const courseCode = courseCodeMap.get(clickedNode.id);
+    setSelectedCourse(courseCode);
     setIsVisible(true);
-    setNodes(
-      nodes.map((n) => {
-        if (n.id !== clickedNode.id) return n;
-        return { ...n, className: nextStatus(n.className) };
-      })
-    );
+    // setNodes(nodes.map((node) =>{
+    //   if(node.id !== clickedNode.id) return node;
+    //   return{...node, data: {...node, status: nextStatus(node.data.status)}}
+    // }))
+    
   }
 
   function closePanel(){
@@ -73,12 +87,14 @@ export default function App() {
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onNodeClick={handleNodeClick}
         defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed } }}
         fitView
       >
         <Background />
+        <ResponsesiveGraph />
       </ReactFlow>
     </div>
   );

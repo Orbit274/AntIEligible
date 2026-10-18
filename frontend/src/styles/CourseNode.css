@@ -1,0 +1,53 @@
+.course-node-container{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px solid black;
+    width: clamp(50px, 120px, 120px);
+    height: 50px;
+    background-color: white;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transform-origin: center;
+}
+
+.course-node-container:hover{
+    transform: scale(1.06);
+    
+}
+.not-started{
+    background-color: white;
+}
+
+.in-progress{
+    background-color: yellow;
+}
+
+.completed{
+    background-color: lime;
+}
+.node{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.progress{
+    background-color: transparent;
+    position: absolute;
+    border-radius: 2px;
+    border: none;
+    top: 3px;
+    right: 0;
+    cursor: pointer;
+}
+
+
+.progress > img{
+    display: block;
+    width: 12px;
+}
+#course-id {
+    text-align: center;
+    font-size: large;
+}
