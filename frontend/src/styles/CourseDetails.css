@@ -1,6 +1,17 @@
 #course-details-container{
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+}
+
+#course-details-container::-webkit-scrollbar{
+    background-color: transparent;
+    width: 6px;
+}
+
+#course-details-container::-webkit-scrollbar-thumb{
+    background-color: lightsalmon;
+    border-radius: 10px;
 }
 #course-info > p{
     font-size: clamp(16px, 1vw, 20px);
