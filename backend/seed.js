@@ -2,6 +2,7 @@
 
 import {DatabaseSync} from "node:sqlite";
 
+
 const API = "https://anteaterapi.com/v2/rest";
 const API_KEY = process.env.ANTEATER_API_KEY;
 const PAGE_SIZE = 100;
@@ -89,6 +90,7 @@ function aliasesFor(code, name) {
 
 function buildDatabase(byId) {
     const db = new DatabaseSync("uci_courses.db");
+    
     db.exec(`
         DROP TABLE IF EXISTS prereq_edges;
         DROP TABLE IF EXISTS courses;
