@@ -1,4 +1,5 @@
-import { ReactFlow, Background, MarkerType, useNodesState } from "@xyflow/react";
+import { ReactFlow, Background, MarkerType, useNodesState, Panel} from "@xyflow/react";
+import SearchBar from "./components/SearchBar";
 import "@xyflow/react/dist/style.css";
 import "./App.css";
 import Header from "./components/Header";
@@ -12,11 +13,16 @@ function makeNode(code, x, y) {
     id: code,
     type: "courseNode",
     position: { x: x, y: y },
+    depth: 0,
+    left: null,
+    right: null,
     data: { label: code,
       status: "not-started"
     },
   };
 }
+
+
 const nodeTypes = {
   courseNode : CourseNode,
 }
@@ -94,6 +100,9 @@ export default function App() {
         fitView
       >
         <Background />
+        <Panel position="top-center">
+          <SearchBar />
+        </Panel>
         <ResponsesiveGraph />
       </ReactFlow>
     </div>

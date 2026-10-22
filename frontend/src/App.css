@@ -1,6 +1,51 @@
 body{
   margin: 0px;
 }
+
+.search {
+  margin-top: 60px;  
+}
+
+.search-results {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 4px;
+  background: white;
+  border: 1px solid #c9d3e0;
+  border-radius: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.search-results li {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border-bottom: 1px solid #666;
+  cursor: pointer;
+}
+
+.search-results li:last-child {
+  border-bottom: none;      
+}
+
+.search-results li:hover {
+  background: #eef5fb;
+}
+
+.search-results span {
+  font-size: 13px;
+  color: #666;
+}
+
+.search input {
+  width: 400px;      
+  padding: 10px 14px; 
+  font-size: 15px;
+}
 .class-card {
   
   border: 2px solid #0064a4;
