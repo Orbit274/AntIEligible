@@ -90,7 +90,7 @@ export default function App() {
 //     setIsVisible(false);
 //   }
   return (
-    <div>
+    <div id="app-page">
       
       <BrowserRouter>
         <Header />
