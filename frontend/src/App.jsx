@@ -8,6 +8,7 @@ import CourseDetailsPanel from "./components/CourseDetailsPanel";
 import CourseNode from "./components/CourseNode";
 import ResponsesiveGraph from "./components/ResponsiveGraph"
 import { BrowserRouter, Route, Routes } from "react-router-dom" 
+import CoursePlanner from "./components/CoursePlanner"
 // Makes one box, so we don't repeat the same fields for every class
 function makeNode(code, x, y) {
   return {
@@ -95,7 +96,7 @@ export default function App() {
         <Routes>
           <Route path="/"></Route>
           <Route path="/search"></Route>
-          <Route path="/planner"></Route>
+          <Route path="/planner" element={<CoursePlanner />}></Route>
         </Routes>
       </BrowserRouter>
         <CourseDetailsPanel courseId={selectedCourse} visible={isVisible} onClose={closePanel} />
