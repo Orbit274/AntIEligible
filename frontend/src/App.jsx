@@ -7,6 +7,7 @@ import { useState } from "react";
 import CourseDetailsPanel from "./components/CourseDetailsPanel";
 import CourseNode from "./components/CourseNode";
 import ResponsesiveGraph from "./components/ResponsiveGraph"
+import { BrowserRouter, Route, Routes } from "react-router-dom" 
 // Makes one box, so we don't repeat the same fields for every class
 function makeNode(code, x, y) {
   return {
@@ -88,7 +89,15 @@ export default function App() {
   }
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
-      <Header />
+      <BrowserRouter>
+        <Header />
+
+        <Routes>
+          <Route path="/"></Route>
+          <Route path="/search"></Route>
+          <Route path="/planner"></Route>
+        </Routes>
+      </BrowserRouter>
         <CourseDetailsPanel courseId={selectedCourse} visible={isVisible} onClose={closePanel} />
       <ReactFlow
         nodes={nodes}
