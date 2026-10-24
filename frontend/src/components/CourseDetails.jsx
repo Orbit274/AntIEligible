@@ -2,7 +2,7 @@ import axios from "axios"
 import { useEffect, useState } from "react";
 import "../styles/CourseDetails.css"
 
-function CourseDetails(courseId){
+function CourseDetails({courseId}){
         const [course, setCourse] = useState(null);
         const [error, setError] = useState(null);
         useEffect(() =>{

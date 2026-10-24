@@ -41,8 +41,18 @@ const prereqStmt = db.prepare(`
     WHERE e.course_id = ?
 `);
 
+const prereqEdges = db.prepare(`
+    WITH RECURSIVE chain(course_id, prereq_id) AS (
+      SELECT course_id, prereq_id FROM prereq_edges WHERE course_id = ?
+      UNION
+      SELECT e.course_id, e.prereq_id
+      FROM prereq_edges e
+      JOIN chain ON e.course_id = chain.prereq_id
+    )
+    SELECT course_id, prereq_id FROM chain
+  `);
+  
 
-// Search runs three different strategies and gets the results
 app.get("/api/search", (req, res) => {
     const q = String(req.query.q ?? "").trim();
     if (!q) {
@@ -104,5 +114,19 @@ app.get("/api/course/*id", (req, res) => {
         prerequisites: prereqStmt.all(id),
     });
 });
+
+
+/** 
+const codeSearch = db.prepare(`
+    SELECT DISTINCT c.id, c.department, c.course_number, c.title, c.min_units
+    FROM courses c
+    LEFT JOIN department_aliases a ON a.department = c.department
+    WHERE REPLACE(UPPER(c.department || c.course_number), ' ', '') LIKE ?
+       OR REPLACE(UPPER(a.alias || c.course_number), ' ', '') LIKE ?
+    LIMIT 20
+  `);
+
+*/
+  
 
 export default app;
