@@ -36,6 +36,18 @@ const prereqStmt = db.prepare(`
     WHERE e.course_id = ?
 `);
 
+const prereqEdges = db.prepare(`
+    WITH RECURSIVE chain(course_id, prereq_id) AS (
+      SELECT course_id, prereq_id FROM prereq_edges WHERE course_id = ?
+      UNION
+      SELECT e.course_id, e.prereq_id
+      FROM prereq_edges e
+      JOIN chain ON e.course_id = chain.prereq_id
+    )
+    SELECT course_id, prereq_id FROM chain
+  `);
+  
+
 app.get("/api/search", (req, res) => {
     const q = String(req.query.q ?? "").trim();
     if (!q) {
