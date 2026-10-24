@@ -1,5 +1,4 @@
 // DATA AND COURSES FROM ANTEATER API: https://docs.icssc.club/docs/about/anteaterapi
-
 import {DatabaseSync} from "node:sqlite";
 
 
@@ -8,6 +7,7 @@ const API_KEY = process.env.ANTEATER_API_KEY;
 const PAGE_SIZE = 100;
 const NOT_ACRONYM = new Set(["and", "of", "the", "in"]);
 
+// Goes to url, returns the data section from the json
 async function getData(url) {
     const headers = API_KEY ? {Authorization: `Bearer ${API_KEY}`} : {};
     const res = await fetch(url, {headers});
@@ -18,6 +18,9 @@ async function getData(url) {
     return body.data;
 }
 
+// Gets all courses on AnteaterAPI courses endpoint, fetches in batches of 100 since that is the max amount at once
+// Stops when page is empty or repeats a page
+// Returns a map matching the official course id to the course object itself
 async function fetchAllCourses() {
     let byId = new Map();
     let skip = 0;
@@ -39,6 +42,8 @@ async function fetchAllCourses() {
     return byId;
 }
 
+// Goes through all the courses and their prerequisites, sees if each prerequisite shows up in the available classes
+// If prerequisites aren't there, it searches for them using the AnteaterAPI course endpoint and adds them to courses
 async function backfillMissing(byId) {
     const missing = new Set();
     for (const c of byId.values()) {
@@ -61,10 +66,16 @@ async function backfillMissing(byId) {
     }
 }
 
+// Takes a string (course search) and returns only the letters and digits of it, uppercase
 function normalizeAlias(value) {
     return value.replace(/[^a-z0-9]/gi, "").toUpperCase();
 }
 
+// Get possible aliases for a course id
+// Add the course all uppercase, only letters and digits
+// Gets rid of all the words that are not turned into acronym letters, splits the remaining words into an array of words, create an acronym
+// Get shortened version of words, first 3-5 letters
+// Returns set of aliases, but only when the alias is 2 letters or more
 function aliasesFor(code, name) {
     const aliases = new Set();
     const normalizedCode = normalizeAlias(code);
@@ -88,6 +99,10 @@ function aliasesFor(code, name) {
     return [...aliases].filter(alias => alias.length >= 2);
 }
 
+
+// Creates all the tables, courses table for main information, fts for search query, prereq_edges link a class and all its prereqs,
+// department aliases show all aliases and their related course, indexes for faster searching
+// Inserts all course data into the tables
 function buildDatabase(byId) {
     const db = new DatabaseSync("uci_courses.db");
     

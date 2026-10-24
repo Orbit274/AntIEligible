@@ -6,12 +6,14 @@ const path = fileURLToPath(new URL("./uci_courses.db", import.meta.url));
 const db = new DatabaseSync(path);
 const app = express();
 
+// Get the real department from a department alias
 const aliasStmt = db.prepare(`
     SELECT department
     FROM department_aliases
     WHERE alias = ? 
 `);
 
+// Get course information matching the department and number
 const departmentNumberStmt = db.prepare(`
     SELECT id, department, course_number, title
     FROM courses
@@ -20,6 +22,7 @@ const departmentNumberStmt = db.prepare(`
     LIMIT 10
 `);
 
+// FTS over title, description, and department name, scored by relevance, weighting given to table columns
 const ftsStmt = db.prepare(`
     SELECT c.id, c.department, c.course_number, c.title
     FROM courses_fts
@@ -30,12 +33,16 @@ const ftsStmt = db.prepare(`
 `);
 
 const courseStmt = db.prepare("SELECT * FROM courses WHERE id = ?");
+
+// Get the first level prerequisites for a course, using course id
 const prereqStmt = db.prepare(`
     SELECT p.id, p.department, p.course_number, p.title
     FROM prereq_edges e JOIN courses p ON p.id = e.prereq_id
     WHERE e.course_id = ?
 `);
 
+
+// Search runs three different strategies and gets the results
 app.get("/api/search", (req, res) => {
     const q = String(req.query.q ?? "").trim();
     if (!q) {
@@ -50,6 +57,8 @@ app.get("/api/search", (req, res) => {
         }
     }
 
+    // Course becomes department letters and digits only, all uppercase
+    // Try splitting the search between department and digit and look up department alias
     const key = q.replace(/[^a-z0-9]/gi, "").toUpperCase();
     for (let i = 1; i < key.length; i++) {
         if (!/\d/.test(key[i])) {
@@ -62,6 +71,7 @@ app.get("/api/search", (req, res) => {
         }
     }
 
+    // Search for anything matching course department, id, description
     const terms = q.match(/[a-z0-9]+/gi) ?? [];
     if (terms.length) {
         const ftsQuery = terms.map(term => `"${term}"*`).join(" AND ");
@@ -75,6 +85,7 @@ app.get("/api/search", (req, res) => {
     res.json([...results.values()].slice(0, 10));
 });
 
+// Get course information given an id
 app.get("/api/course/*id", (req, res) => {
     const id = [].concat(req.params.id).join("/");
     const c = courseStmt.get(id);
