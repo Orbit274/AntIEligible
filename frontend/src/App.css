@@ -2,6 +2,10 @@ body{
   margin: 0px;
 }
 
+#app-page{
+  width: 100vw;
+  height: 100vh;
+}
 .search {
   margin-top: 60px;  
 }
@@ -46,40 +50,5 @@ body{
   padding: 10px 14px; 
   font-size: 15px;
 }
-.class-card {
-  
-  border: 2px solid #0064a4;
-  border-radius: 10px;
-  padding: 10px 14px;
-  margin: 8px 0;
-  width: 260px;
-}
-
-.completed {
-  border-color: #2e8b57;
-  background-color: #e8f6ee;
-}
-
-.in-progress{
-  border-color: #ffa702;
-  background-color: #faf9cb;
-}
-
-.prereqs{
-  margin-left: 30px;
-  border-left: 2px solid #c9d3e0;
-  padding-left: 30px;
-}
-
-.react-flow__node.completed {
-  border-color: #2e8b57;
-  background-color: #e8f6ee;
-}
-
-.react-flow__node.in-progress {
-  border-color: #d4a017;
-  background-color: #fff6db;
-}
-
 
 

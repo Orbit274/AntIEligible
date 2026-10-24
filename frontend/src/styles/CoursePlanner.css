@@ -1,0 +1,46 @@
+#planner-container{
+    display: flex;
+    flex-direction: column;
+    margin: 1% 0;
+    padding: 0 10%;
+    height: 80%;
+}
+
+#planner-title{
+    font-weight: bold;
+    font-size: 2vw;
+    margin-bottom: 20px;
+}
+
+#quarter-container{
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2em;
+    height: 100%;
+}
+
+.quarter{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: lightblue;
+    border-radius: 8px;
+    border: 1px solid black;
+    padding: 2%;
+}
+
+.quarter-term{
+    font-size: 2rem;
+}
+
+.planned-course-container{
+    display: flex;
+    flex-direction: column;
+    gap: 2%;
+    height: 100%;
+}
+.planned-course{
+    background-color: aliceblue;
+    border-radius: 8px;
+    height: 10%;
+}

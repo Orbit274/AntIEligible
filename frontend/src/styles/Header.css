@@ -1,31 +1,47 @@
 #header{
     display: flex;
     flex-direction: row;
-    background-color: blue;
+    gap: 10px;
+    background-color: #0022f9;
     padding: 5px;
     align-items: center;
 }
 
-#app-name{
+#logo-app-name-container{
+    display: flex;
+    align-items: center;
     margin-left: 10px;
     color: yellow;
     font-size: clamp(20px, 2vw, 40px);
     text-decoration: none;
 }
 
-ul{
+#logo{
+    width: 2em;
+    padding-right: 10px;
+}
+
+#app-name{
+    width: fit-content;
+}
+
+#nav-bar{
+    margin-left: 0.5%;
     display: flex;
-    flex-direction: row;
-    list-style: none;
+    gap: 10%;
+
 }
 
-li > a {
+.nav-item{
+    font-size: clamp(10px, 2vw, 34px);
+    background-color: white;
+    border-radius: 20px;
+    border: 3px solid black;
+    padding: 2px 10%;
+    color: black;
     text-decoration: none;
-    margin: 0px 10px;
-    font-size: clamp(15px, 2vw, 30px);
-    color: yellow;
 }
 
-li > a:hover{
-    color: lightblue;
+.nav-item:hover{
+    background-color: yellow;
 }
