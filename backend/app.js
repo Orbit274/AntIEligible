@@ -13,9 +13,18 @@ const aliasStmt = db.prepare(`
     WHERE alias = ? 
 `);
 
+// Course number search alone, goes across every department for a course with a matching number
+const numberStmt = db.prepare(`
+    SELECT id, department, course_number, title, min_units, max_units
+    FROM courses
+    WHERE course_number LIKE ?
+    ORDER BY (course_number = ?) DESC, department, course_number
+    LIMIT 25
+`);
+
 // Get course information matching the department and number
 const departmentNumberStmt = db.prepare(`
-    SELECT id, department, course_number, title
+    SELECT id, department, course_number, title, min_units, max_units
     FROM courses
     WHERE department = ? AND course_number LIKE ?
     ORDER BY (course_number = ?) DESC, course_number
@@ -24,7 +33,7 @@ const departmentNumberStmt = db.prepare(`
 
 // FTS over title, description, and department name, scored by relevance, weighting given to table columns
 const ftsStmt = db.prepare(`
-    SELECT c.id, c.department, c.course_number, c.title
+    SELECT c.id, c.department, c.course_number, c.title, c.min_units, c.max_units
     FROM courses_fts
     JOIN courses c ON c.id = courses_fts.course_id
     WHERE courses_fts MATCH ?
@@ -70,6 +79,10 @@ app.get("/api/search", (req, res) => {
     // Course becomes department letters and digits only, all uppercase
     // Try splitting the search between department and digit and look up department alias
     const key = q.replace(/[^a-z0-9]/gi, "").toUpperCase();
+    const numberOnly = /^\d+[A-Z]{0,2}$/.test(key);
+    if (numberOnly) {
+        addResults(numberStmt.all(`${key}%`, key));
+    }
     for (let i = 1; i < key.length; i++) {
         if (!/\d/.test(key[i])) {
             continue;
