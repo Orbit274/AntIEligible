@@ -34,18 +34,32 @@
 
 .progress{
     background-color: transparent;
+    width: fit-content;
     position: absolute;
     border-radius: 2px;
     border: none;
     top: 3px;
-    right: 0;
+    right: 3px;
     cursor: pointer;
+    padding: 0;
 }
-
 
 .progress > img{
     display: block;
     width: 12px;
+}
+
+.branch-toggle{
+    position: absolute;
+    right: 0;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.branch-toggle > img{
+    display: block;
+    width: 10px;
 }
 #course-id {
     text-align: center;
