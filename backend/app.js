@@ -3,7 +3,7 @@ import {DatabaseSync} from "node:sqlite";
 import {fileURLToPath} from "node:url";
 
 const path = fileURLToPath(new URL("./uci_courses.db", import.meta.url));
-const db = new DatabaseSync(path);
+const db = new DatabaseSync(path, {readOnly: true});
 const app = express();
 
 // Get the real department from a department alias
@@ -122,6 +122,8 @@ app.get("/api/course/*id", (req, res) => {
         course_number: c.course_number,
         title: c.title,
         description: c.description,
+        min_units: c.min_units,
+        max_units: c.max_units,
         prerequisite_text: c.prerequisite_text,
         prerequisite_tree: JSON.parse(c.prerequisite_tree || "{}"),
         prerequisites: prereqStmt.all(id),
