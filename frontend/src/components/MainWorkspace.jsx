@@ -1,24 +1,13 @@
 import CourseDetailsPanel from "./CourseDetailsPanel";
-import { ReactFlow, Background, MarkerType, useNodesState, Panel} from "@xyflow/react";
-import { useState } from "react";
+import { ReactFlow, Background, MarkerType, useNodesState, Panel, useEdgesState} from "@xyflow/react";
+import { useState} from "react";
 import SearchBar from "./SearchBar";
 import ResponsiveGraph from "./ResponsiveGraph";
 import CourseNode from "./CourseNode";
 import "@xyflow/react/dist/style.css";
 import "../styles/MainWorkspace.css"
-function makeNode(code, x, y) {
-  return {
-    id: code,
-    type: "courseNode",
-    position: { x: x, y: y },
-    depth: 0,
-    left: null,
-    right: null,
-    data: { label: code,
-      status: "not-started"
-    },
-  };
-}
+import axios from "axios";
+import {buildCourseGraph, makeNode, makeEdge} from "../graph/courseGraph";
 
 
 const nodeTypes = {
@@ -34,24 +23,20 @@ const courseCodeMap = new Map([
   ["ICS 33", "I&CSCI33"],
   ["ICS 32", "I&CSCI32"]
 ]);
+
 const startingNodes = [
-  // column 1: your goals
-  makeNode("ICS 45J", 0, 0),
-  makeNode("ICS 46", 0, 150),
-  makeNode("ICS 51", 0, 300),
+  makeNode("ICS 45J", "ICS 45J", 0, 0),
+  makeNode("ICS 46", "ICS 46", 0, 150),
+  makeNode("ICS 51", "ICS 51", 0, 300),
 
-  // column 2
-  makeNode("ICS 45C", 300, 75),
-  makeNode("ICS 6B", 300, 250),
+  makeNode("ICS 45C", "ICS 45C", 300, 75),
+  makeNode("ICS 6B", "ICS 6B", 300, 250),
 
-  // column 3
-  makeNode("ICS 33", 600, 75),
-
-  // column 4
-  makeNode("ICS 32", 900, 75),
+  makeNode("ICS 33", "ICS 33", 600, 75),
+  makeNode("ICS 32", "ICS 32", 900, 75),
 ];
 
-const edges = [
+const initialEdges = [
   { id: "33-45J", source: "ICS 33", target: "ICS 45J", animated: true},
   { id: "45C-46", source: "ICS 45C", target: "ICS 46", animated: true},
   { id: "6B-46", source: "ICS 6B", target: "ICS 46", animated: true },
@@ -68,6 +53,9 @@ function nextStatus(status) {
 
 
 function MainWorkspace(){
+    const [edges, setEdges] = useEdgesState(initialEdges);
+    const [workspaceKey, setWorkspaceKey] = useState(0);
+    
     function closePanel(){
       setIsVisible(false);
     }
@@ -78,11 +66,26 @@ function MainWorkspace(){
         const courseCode = courseCodeMap.get(clickedNode.id);
         setSelectedCourse(courseCode);
         setIsVisible(true);
-        // setNodes(nodes.map((node) =>{
-        //   if(node.id !== clickedNode.id) return node;
-        //   return{...node, data: {...node, status: nextStatus(node.data.status)}}
-        // }))
     };
+
+    // Called by the search bar, clears the workspace and shows that course plus its direct prerequisites
+    async function handleSearchSelect(result) {
+      try {
+        const response = await axios.get(`/api/course/${encodeURIComponent(result.id)}`);
+        const course = response.data;
+
+        const graph = buildCourseGraph(course);
+        setNodes(graph.nodes);
+        setEdges(graph.edges);
+        setWorkspaceKey((key) => key + 1);
+
+        setSelectedCourse(course.id);
+        setIsVisible(true);
+      } catch (err) {
+        console.error("Failed to load course:", err);
+      }
+    }
+
     return(
     <div style={{ width: "100vw", height: "100vh" }}>
     {true && (<CourseDetailsPanel courseId={selectedCourse} visible={isVisible} onClose={closePanel} />)}
@@ -94,10 +97,11 @@ function MainWorkspace(){
         onNodeClick={handleNodeClick}
         defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed } }}
         fitView
+        key={workspaceKey}
       >
         <Background />
         <Panel position="top-center">
-          <SearchBar />
+          <SearchBar onCourseChosen={handleSearchSelect}/>
         </Panel>
         <ResponsiveGraph />
       </ReactFlow>

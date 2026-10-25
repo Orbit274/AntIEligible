@@ -1,21 +1,61 @@
-import { useState } from "react";
+import axios from "axios";
+import { useState, useEffect } from "react";
+import "../styles/SearchBar.css";
 
-export default function SearchBar() {
-  const [text, setText] = useState("");
-  const [results, setResults] = useState([]);   
+// Search bar with dropdown of courses
+// When user clicks a class, calls onCourseChosen(course), course is object from /api/search
+export default function SearchBar({onCourseChosen}) {
+  const [search, setSearch] = useState("");
+  const [results, setResults] = useState([]);
+  const [open, setOpen] = useState(false);
 
-  async function handleChange(event) {
-    const newText = event.target.value;
-    setText(newText);
-
-    if (newText.trim() === "") {
-      setResults([]);
+  // Runs when text changes, has 200ms delay
+  useEffect(() => {
+    let q = search.trim();
+    if (!q) {
       return;
     }
 
-    const response = await fetch("/api/search?q=" + encodeURIComponent(newText));
-    const data = await response.json();
-    setResults(data);                            
+    let controller = new AbortController();
+    let timer = setTimeout(async () => {
+      try {
+        const response = await axios.get("/api/search", {params: {q}, signal: controller.signal});
+        setResults(response.data);
+        setOpen(true);
+      } catch (e) {
+        if (!axios.isCancel(e)) {
+          console.error("Search failed: ", e);
+        }
+      }
+    }, 200);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    }
+  }, [search]);
+
+  async function handleChange(event) {
+    const text = event.target.value;
+    setSearch(text);
+
+    if (text.trim() === "") {
+      setResults([]);
+      return;
+    };                            
+  }
+
+  function choose(course) {
+    setSearch("");
+    setResults([]);
+    setOpen(false);
+    onCourseChosen(course);
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === "Escape") {
+      setOpen(false);
+    }
   }
 
   return (
@@ -23,14 +63,19 @@ export default function SearchBar() {
       <input
         type="text"
         placeholder="Search classes"
-        value={text}
+        value={search}
         onChange={handleChange}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onKeyDown={handleKeyDown}
+        autoComplete="off"
       />
 
-      {results.length > 0 && (
+      {open && search.trim() && (
         <ul className="search-results">
+          {results.length === 0 && <li className="search-empty">No courses found</li>}
           {results.map((course) => (
-            <li key={course.id}>
+            <li key={course.id} onMouseDown={() => choose(course)}>
               <strong>{course.department} {course.course_number}</strong>
               <span>{course.title}</span>
             </li>
