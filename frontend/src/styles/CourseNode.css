@@ -63,5 +63,5 @@
 }
 #course-id {
     text-align: center;
-    font-size: large;
+    font-size: clamp(12px, 1vw, 12px);
 }
