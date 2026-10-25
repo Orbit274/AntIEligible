@@ -9,7 +9,7 @@ export function makeNode(id, label, x, y, status = "not-started") {
     id,
     type: "courseNode",
     position: { x, y },
-    data: { label, status },
+    data: { label, status, isExpanded : false},
   };
 }
 
@@ -39,7 +39,8 @@ export function addCourseToGraph(graph, course, origin = { x: 0, y: 0 }) {
     const edge = makeEdge(p.id, course.id);
     if (!edges.some((e) => e.id === edge.id)) edges.push(edge);
   });
-
+  //First node will always expand 
+  nodes[0].data.isExpanded = true;
   return { nodes, edges };
 }
 

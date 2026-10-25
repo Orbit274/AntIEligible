@@ -53,7 +53,7 @@ function nextStatus(status) {
 
 
 function MainWorkspace(){
-    const [edges, setEdges] = useEdgesState(initialEdges);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
     const [workspaceKey, setWorkspaceKey] = useState(0);
     
     function closePanel(){
@@ -63,11 +63,10 @@ function MainWorkspace(){
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [isVisible, setIsVisible] = useState(false);
     function handleNodeClick(event, clickedNode) {
-        const courseCode = courseCodeMap.get(clickedNode.id);
+        const courseCode = clickedNode.id;
         setSelectedCourse(courseCode);
         setIsVisible(true);
     };
-
     // Called by the search bar, clears the workspace and shows that course plus its direct prerequisites
     async function handleSearchSelect(result) {
       try {
@@ -85,7 +84,6 @@ function MainWorkspace(){
         console.error("Failed to load course:", err);
       }
     }
-
     return(
     <div style={{ width: "100vw", height: "100vh" }}>
     {true && (<CourseDetailsPanel courseId={selectedCourse} visible={isVisible} onClose={closePanel} />)}
@@ -95,6 +93,7 @@ function MainWorkspace(){
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onNodeClick={handleNodeClick}
+        onEdgesChange={onEdgesChange}
         defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed } }}
         fitView
         key={workspaceKey}
