@@ -1,9 +1,9 @@
-import { Handle, Position, useReactFlow } from "@xyflow/react";
+import { applyEdgeChanges, getConnectedEdges, Handle, Position, useReactFlow } from "@xyflow/react";
 import "../styles/CourseNode.css"
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import axios from "axios";
 import "../graph/courseGraph.js"
-import { addCourseToGraph} from "../graph/courseGraph.js";
+import { addCourseToGraph, removePrereqCourseNode, removePrereqEdge} from "../graph/courseGraph.js";
 function CourseNode({id, data}){
     const {updateNodeData, getEdges, getNodes, setNodes, setEdges, getNode} = useReactFlow();
     const [branchToggleAction, setBranchToggleAction] = useState(data.isExpanded ? "collapse" : "expand");
@@ -32,6 +32,12 @@ function CourseNode({id, data}){
         setNodes(graph.nodes);
         
     }
+    function collapseToggleHandler(){
+        const graph = removePrereqCourseNode({nodes : getNodes(), edges: getEdges()}, id);
+        setEdges(graph.edges);
+        setNodes(graph.nodes);
+    
+    }
     function handleBranchToggle(event){
         event.stopPropagation();
         const isExpanded = !data.isExpanded;
@@ -40,6 +46,9 @@ function CourseNode({id, data}){
         
         if(!data.isExpanded){
             expandToggleHandler();
+        } else {
+            collapseToggleHandler();
+            updateNodeData(id, {isExpanded : isExpanded});
         }
     }
     
