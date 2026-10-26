@@ -79,7 +79,10 @@ export function addCourseToGraph(graph, course, origin = { x: 0, y: 0 }) {
     if (!edges.some((e) => e.id === edge.id)) edges.push(edge);
   });
   //First node will initially expand 
-  nodes[0].data.isExpanded = true;
+  const expandedIndex = nodes.findIndex((n) => n.id === course.id);
+  if (expandedIndex !== -1) {
+    nodes[expandedIndex] = { ...nodes[expandedIndex], data: { ...nodes[expandedIndex].data, isExpanded: true } };
+  }
   return { nodes, edges };
 }
 

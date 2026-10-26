@@ -56,7 +56,7 @@ function CourseNode({id, data}){
         <div key={id} className={`course-node-container ${data.status}`} >
             <Handle type="target" position={Position.Right}/>
             <div className="node">
-                <span id="course-id">{id}</span>
+                <span id="course-id">{data.label}</span>
                 <button className="progress nodrag nopan" onClick={handleChangeStatus}><img src={`../images/${data.status}-status.png`}></img></button>
                 <button className="branch-toggle" onClick={handleBranchToggle}><img src={`/images/${branchToggleAction}-branch-arrow.png`}></img></button>
             </div>

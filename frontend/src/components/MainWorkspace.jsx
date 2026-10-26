@@ -13,36 +13,26 @@ import {buildCourseGraph, makeNode, makeEdge} from "../graph/courseGraph";
 const nodeTypes = {
   courseNode : CourseNode,
 }
-//Maps the course node title to the course code in database
-const courseCodeMap = new Map([
-  ["ICS 45J", "I&CSCI45J"],
-  ["ICS 46", "I&CSCI46"],
-  ["ICS 51", "I&CSCI51"],
-  ["ICS 45C", "I&CSCI45C"],
-  ["ICS 6B", "I&CSCI6B"],
-  ["ICS 33", "I&CSCI33"],
-  ["ICS 32", "I&CSCI32"]
-]);
 
 const startingNodes = [
-  makeNode("ICS 45J", "ICS 45J", 0, 0),
-  makeNode("ICS 46", "ICS 46", 0, 150),
-  makeNode("ICS 51", "ICS 51", 0, 300),
+  makeNode("I&CSCI45J", "ICS 45J", 0, 0),
+  makeNode("I&CSCI46", "ICS 46", 0, 150),
+  makeNode("I&CSCI51", "ICS 51", 0, 300),
 
-  makeNode("ICS 45C", "ICS 45C", 300, 75),
-  makeNode("ICS 6B", "ICS 6B", 300, 250),
+  makeNode("I&CSCI45C", "ICS 45C", 300, 75),
+  makeNode("I&CSCI6B", "ICS 6B", 300, 250),
 
-  makeNode("ICS 33", "ICS 33", 600, 75),
-  makeNode("ICS 32", "ICS 32", 900, 75),
+  makeNode("I&CSCI33", "ICS 33", 600, 75),
+  makeNode("I&CSCI32", "ICS 32", 900, 75),
 ];
 
 const initialEdges = [
-  { id: "33-45J", source: "ICS 33", target: "ICS 45J", animated: true},
-  { id: "45C-46", source: "ICS 45C", target: "ICS 46", animated: true},
-  { id: "6B-46", source: "ICS 6B", target: "ICS 46", animated: true },
-  { id: "6B-51", source: "ICS 6B", target: "ICS 51", animated: false},
-  { id: "33-45C", source: "ICS 33", target: "ICS 45C", animated: false },
-  { id: "32-33", source: "ICS 32", target: "ICS 33", animated: false },
+  { ...makeEdge("I&CSCI33", "I&CSCI45J"), animated: true },
+  { ...makeEdge("I&CSCI45C", "I&CSCI46"), animated: true },
+  { ...makeEdge("I&CSCI6B", "I&CSCI46"), animated: true },
+  makeEdge("I&CSCI6B", "I&CSCI51"),
+  makeEdge("I&CSCI33", "I&CSCI45C"),
+  makeEdge("I&CSCI32", "I&CSCI33"),
 ];
 
 function nextStatus(status) {
