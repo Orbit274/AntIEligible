@@ -1,18 +1,24 @@
 import CourseDetailsPanel from "./CourseDetailsPanel";
-import { ReactFlow, Background, MarkerType, useNodesState, Panel, useEdgesState} from "@xyflow/react";
-import { useState} from "react";
+import {
+  ReactFlow,
+  Background,
+  MarkerType,
+  useNodesState,
+  Panel,
+  useEdgesState,
+} from "@xyflow/react";
+import { useState } from "react";
 import SearchBar from "./SearchBar";
 import ResponsiveGraph from "./ResponsiveGraph";
 import CourseNode from "./CourseNode";
 import "@xyflow/react/dist/style.css";
-import "../styles/MainWorkspace.css"
+import "../styles/MainWorkspace.css";
 import axios from "axios";
-import {buildCourseGraph, makeNode, makeEdge} from "../graph/courseGraph";
-
+import { buildCourseGraph, makeNode, makeEdge } from "../graph/courseGraph";
 
 const nodeTypes = {
-  courseNode : CourseNode,
-}
+  courseNode: CourseNode,
+};
 
 const startingNodes = [
   makeNode("I&CSCI45J", "ICS 45J", 0, 0),
@@ -41,42 +47,49 @@ function nextStatus(status) {
   return "not-started";
 }
 
+function MainWorkspace() {
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [workspaceKey, setWorkspaceKey] = useState(0);
 
-function MainWorkspace(){
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-    const [workspaceKey, setWorkspaceKey] = useState(0);
-    
-    function closePanel(){
-      setIsVisible(false);
+  function closePanel() {
+    setIsVisible(false);
+  }
+  const [nodes, setNodes, onNodesChange] = useNodesState(startingNodes);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [isVisible, setIsVisible] = useState(false);
+  function handleNodeClick(event, clickedNode) {
+    const courseCode = clickedNode.id;
+    setSelectedCourse(courseCode);
+    setIsVisible(true);
+  }
+  // Called by the search bar, clears the workspace and shows that course plus its direct prerequisites
+  async function handleSearchSelect(result) {
+    try {
+      const response = await axios.get(
+        `/api/course/${encodeURIComponent(result.id)}`,
+      );
+      const course = response.data;
+
+      const graph = buildCourseGraph(course);
+      setNodes(graph.nodes);
+      setEdges(graph.edges);
+      setWorkspaceKey((key) => key + 1);
+
+      setSelectedCourse(course.id);
+      setIsVisible(true);
+    } catch (err) {
+      console.error("Failed to load course:", err);
     }
-    const [nodes, setNodes, onNodesChange] = useNodesState(startingNodes);
-    const [selectedCourse, setSelectedCourse] = useState(null);
-    const [isVisible, setIsVisible] = useState(false);
-    function handleNodeClick(event, clickedNode) {
-        const courseCode = clickedNode.id;
-        setSelectedCourse(courseCode);
-        setIsVisible(true);
-    };
-    // Called by the search bar, clears the workspace and shows that course plus its direct prerequisites
-    async function handleSearchSelect(result) {
-      try {
-        const response = await axios.get(`/api/course/${encodeURIComponent(result.id)}`);
-        const course = response.data;
-
-        const graph = buildCourseGraph(course);
-        setNodes(graph.nodes);
-        setEdges(graph.edges);
-        setWorkspaceKey((key) => key + 1);
-
-        setSelectedCourse(course.id);
-        setIsVisible(true);
-      } catch (err) {
-        console.error("Failed to load course:", err);
+  }
+  return (
+    <div style={{ width: "100vw" }}>
+      {
+        <CourseDetailsPanel
+          courseId={selectedCourse}
+          visible={isVisible}
+          onClose={closePanel}
+        />
       }
-    }
-    return(
-    <div style={{ width: "100vw", height: "100vh" }}>
-    {true && (<CourseDetailsPanel courseId={selectedCourse} visible={isVisible} onClose={closePanel} />)}
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -90,12 +103,12 @@ function MainWorkspace(){
       >
         <Background />
         <Panel position="top-center">
-          <SearchBar onCourseChosen={handleSearchSelect}/>
+          <SearchBar onCourseChosen={handleSearchSelect} />
         </Panel>
         <ResponsiveGraph />
       </ReactFlow>
     </div>
-    );
+  );
 }
 
 export default MainWorkspace;

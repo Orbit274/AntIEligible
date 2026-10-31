@@ -1,0 +1,43 @@
+#sidebar-container{
+    padding: 1% 0.5%;
+    display: flex;
+    flex-direction: column;
+    width: clamp(300px,10vw, 10vw);
+    background-color: white;
+    box-shadow: 1px 5px 19px -7px rgba(0, 0, 0, 0.11);
+}
+
+#sidebar-title{
+    font-family: Arial, sans-serif;
+    font-size: clamp(7px, 1vw, 10px);
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #718096;
+    margin-bottom: 2%;
+}
+
+.side-bar-label{
+    font-family: Arial, sans-serif;
+    font-size: clamp(9px, 1vw, 20px);
+    font-weight: 600;
+    color: #172b4d;
+}
+
+hr{
+    border: none;
+    border-top: 1px solid #e0e4eb;
+    margin: 12px 0;
+}
+.tracked-course-container{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.tracked-course{
+    display: flex;
+    flex-direction: row;
+}
+
+
