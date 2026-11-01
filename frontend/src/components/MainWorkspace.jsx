@@ -1,18 +1,30 @@
 import CourseDetailsPanel from "./CourseDetailsPanel";
-import { ReactFlow, Background, MarkerType, useNodesState, Panel, useEdgesState} from "@xyflow/react";
-import { useState} from "react";
+import {
+  ReactFlow,
+  Background,
+  MarkerType,
+  useNodesState,
+  Panel,
+  useEdgesState,
+  ReactFlowProvider,
+} from "@xyflow/react";
+import { useState } from "react";
 import SearchBar from "./SearchBar";
-import ResponsiveGraph from "./ResponsiveGraph";
 import CourseNode from "./CourseNode";
 import "@xyflow/react/dist/style.css";
-import "../styles/MainWorkspace.css"
+import "../styles/MainWorkspace.css";
 import axios from "axios";
+import ZoomControls from "./ZoomControls";
+import GraphLegend from "./GraphLegend";
 import {buildFullCourseGraph, makeNode, makeEdge} from "../graph/courseGraph";
 
-
+const translateExtent = [
+  [-100, -1000],
+  [3000, 1000],
+];
 const nodeTypes = {
-  courseNode : CourseNode,
-}
+  courseNode: CourseNode,
+};
 
 const startingNodes = [
   makeNode("I&CSCI45J", "ICS 45J", 0, 0),
@@ -41,6 +53,9 @@ function nextStatus(status) {
   return "not-started";
 }
 
+function MainWorkspace() {
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [workspaceKey, setWorkspaceKey] = useState(0);
 
 function MainWorkspace(){
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -74,28 +89,61 @@ function MainWorkspace(){
         console.error("Failed to load course:", err);
       }
     }
-    return(
-    <div style={{ width: "100vw", height: "100vh" }}>
-    {true && (<CourseDetailsPanel courseId={selectedCourse} visible={isVisible} onClose={closePanel} />)}
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onNodeClick={handleNodeClick}
-        onEdgesChange={onEdgesChange}
-        defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed } }}
-        fitView
-        key={workspaceKey}
-      >
-        <Background />
-        <Panel position="top-center">
-          <SearchBar onCourseChosen={handleSearchSelect}/>
-        </Panel>
-        <ResponsiveGraph />
-      </ReactFlow>
-    </div>
-    );
+  }
+  return (
+    <>
+      <div id="main-body">
+        <div id="main-workspace-container">
+          <div id="main-workspace-header-container">
+            <span className="main-workspace-label">COURSE SEARCH</span>
+            <h1 className="main-workspace-title">
+              Which course do you want to take next?
+            </h1>
+            <p className="search-description">
+              Search any UCI course to map its prerequisites and check your
+              eligibility.
+            </p>
+          </div>
+          <div id="search-bar-container">
+            <SearchBar onCourseChosen={handleSearchSelect} />
+          </div>
+          <CourseDetailsPanel
+            courseId={selectedCourse}
+            visible={isVisible}
+            onClose={closePanel}
+          />
+          <div id="graph-container">
+            <GraphLegend />
+            <ReactFlowProvider>
+              <ZoomControls />
+              <div id="graph">
+                <ReactFlow
+                  nodes={nodes}
+                  edges={edges}
+                  nodeTypes={nodeTypes}
+                  onNodesChange={onNodesChange}
+                  onNodeClick={handleNodeClick}
+                  onEdgesChange={onEdgesChange}
+                  translateExtent={translateExtent}
+                  proOptions={{ hideAttribution: true }}
+                  defaultEdgeOptions={{
+                    markerEnd: { type: MarkerType.ArrowClosed },
+                  }}
+                  fitView
+                  key={workspaceKey}
+                >
+                  <Background />
+                  {/* <Panel position="top-center">
+              <SearchBar onCourseChosen={handleSearchSelect} />
+            </Panel> */}
+                </ReactFlow>
+              </div>
+            </ReactFlowProvider>
+          </div>
+        </div>
+      </div>
+    </>
+  );
 }
 
 export default MainWorkspace;
