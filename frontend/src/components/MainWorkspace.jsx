@@ -7,7 +7,7 @@ import CourseNode from "./CourseNode";
 import "@xyflow/react/dist/style.css";
 import "../styles/MainWorkspace.css"
 import axios from "axios";
-import {buildCourseGraph, makeNode, makeEdge} from "../graph/courseGraph";
+import {buildFullCourseGraph, makeNode, makeEdge} from "../graph/courseGraph";
 
 
 const nodeTypes = {
@@ -60,15 +60,15 @@ function MainWorkspace(){
     // Called by the search bar, clears the workspace and shows that course plus its direct prerequisites
     async function handleSearchSelect(result) {
       try {
-        const response = await axios.get(`/api/course/${encodeURIComponent(result.id)}`);
-        const course = response.data;
+        const response = await axios.get(`/api/course-tree/${encodeURIComponent(result.id)}`);
+        const tree = response.data;
 
-        const graph = buildCourseGraph(course);
+        const graph = buildFullCourseGraph(tree);
         setNodes(graph.nodes);
         setEdges(graph.edges);
         setWorkspaceKey((key) => key + 1);
 
-        setSelectedCourse(course.id);
+        setSelectedCourse(tree.id);
         setIsVisible(true);
       } catch (err) {
         console.error("Failed to load course:", err);
