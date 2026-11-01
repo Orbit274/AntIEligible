@@ -6,16 +6,21 @@ import {
   useNodesState,
   Panel,
   useEdgesState,
+  ReactFlowProvider,
 } from "@xyflow/react";
 import { useState } from "react";
 import SearchBar from "./SearchBar";
-import ResponsiveGraph from "./ResponsiveGraph";
 import CourseNode from "./CourseNode";
 import "@xyflow/react/dist/style.css";
 import "../styles/MainWorkspace.css";
 import axios from "axios";
 import { buildCourseGraph, makeNode, makeEdge } from "../graph/courseGraph";
+import ZoomControls from "./ZoomControls";
 
+const translateExtent = [
+  [-100, -1000],
+  [3000, 1000],
+];
 const nodeTypes = {
   courseNode: CourseNode,
 };
@@ -82,32 +87,57 @@ function MainWorkspace() {
     }
   }
   return (
-    <div style={{ width: "100vw" }}>
-      {
-        <CourseDetailsPanel
-          courseId={selectedCourse}
-          visible={isVisible}
-          onClose={closePanel}
-        />
-      }
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onNodeClick={handleNodeClick}
-        onEdgesChange={onEdgesChange}
-        defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed } }}
-        fitView
-        key={workspaceKey}
-      >
-        <Background />
-        <Panel position="top-center">
-          <SearchBar onCourseChosen={handleSearchSelect} />
-        </Panel>
-        <ResponsiveGraph />
-      </ReactFlow>
-    </div>
+    <>
+      <div id="main-body">
+        <div id="main-workspace-container">
+          <div id="main-workspace-header-container">
+            <span className="main-workspace-label">COURSE SEARCH</span>
+            <h1 className="main-workspace-title">
+              Which course do you want to take next?
+            </h1>
+            <p className="search-description">
+              Search any UCI course to map its prerequisites and check your
+              eligibility.
+            </p>
+          </div>
+          <div id="search-bar-container">
+            <SearchBar onCourseChosen={handleSearchSelect} />
+          </div>
+          <CourseDetailsPanel
+            courseId={selectedCourse}
+            visible={isVisible}
+            onClose={closePanel}
+          />
+          <div id="graph-container">
+            <ReactFlowProvider>
+              <ZoomControls />
+              <div id="graph">
+                <ReactFlow
+                  nodes={nodes}
+                  edges={edges}
+                  nodeTypes={nodeTypes}
+                  onNodesChange={onNodesChange}
+                  onNodeClick={handleNodeClick}
+                  onEdgesChange={onEdgesChange}
+                  translateExtent={translateExtent}
+                  proOptions={{ hideAttribution: true }}
+                  defaultEdgeOptions={{
+                    markerEnd: { type: MarkerType.ArrowClosed },
+                  }}
+                  fitView
+                  key={workspaceKey}
+                >
+                  <Background />
+                  {/* <Panel position="top-center">
+              <SearchBar onCourseChosen={handleSearchSelect} />
+            </Panel> */}
+                </ReactFlow>
+              </div>
+            </ReactFlowProvider>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
