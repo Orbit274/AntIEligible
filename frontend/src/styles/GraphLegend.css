@@ -1,0 +1,39 @@
+#legend-container{
+    display: flex;
+    flex-direction: row;
+    justify-content: start;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.legend-item{
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
+}
+
+#dashed-line-icon{
+    width: 30px;
+    border-top: 2px dashed black;
+}
+
+#straight-line-icon{
+    width: 30px;
+    height: 2px;
+    background-color: black;
+}
+.progress {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.guide{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+

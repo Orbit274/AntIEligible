@@ -16,6 +16,7 @@ import "../styles/MainWorkspace.css";
 import axios from "axios";
 import { buildCourseGraph, makeNode, makeEdge } from "../graph/courseGraph";
 import ZoomControls from "./ZoomControls";
+import GraphLegend from "./GraphLegend";
 
 const translateExtent = [
   [-100, -1000],
@@ -109,6 +110,7 @@ function MainWorkspace() {
             onClose={closePanel}
           />
           <div id="graph-container">
+            <GraphLegend />
             <ReactFlowProvider>
               <ZoomControls />
               <div id="graph">
