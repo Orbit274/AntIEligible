@@ -57,10 +57,6 @@ function MainWorkspace() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [workspaceKey, setWorkspaceKey] = useState(0);
 
-function MainWorkspace(){
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-    const [workspaceKey, setWorkspaceKey] = useState(0);
-    
     function closePanel(){
       setIsVisible(false);
     }
@@ -89,7 +85,6 @@ function MainWorkspace(){
         console.error("Failed to load course:", err);
       }
     }
-  }
   return (
     <>
       <div id="main-body">
