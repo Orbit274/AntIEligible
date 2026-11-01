@@ -60,7 +60,9 @@ const prereqEdges = db.prepare(`
     )
     SELECT course_id, prereq_id FROM chain
   `);
-  
+
+const courseLabelStmt = db.prepare("SELECT id, department, course_number, title FROM courses WHERE id = ?");
+
 
 app.get("/api/search", (req, res) => {
     const q = String(req.query.q ?? "").trim();
@@ -128,6 +130,22 @@ app.get("/api/course/*id", (req, res) => {
         prerequisite_tree: JSON.parse(c.prerequisite_tree || "{}"),
         prerequisites: prereqStmt.all(id),
     });
+});
+
+// Get every prerequisite of a course, all the way down, as a list of courses and edges
+app.get("/api/course-tree/*id", (req, res) => {
+    const id = [].concat(req.params.id).join("/");
+    if (!courseLabelStmt.get(id)) {
+        return res.status(404).json({error: "course not found"});
+    }
+    const edges = prereqEdges.all(id);
+    const ids = new Set([id]);
+    for (const e of edges) {
+        ids.add(e.course_id);
+        ids.add(e.prereq_id);
+    }
+    const courses = [...ids].map((courseId) => courseLabelStmt.get(courseId)).filter(Boolean);
+    res.json({id, courses, edges});
 });
 
 

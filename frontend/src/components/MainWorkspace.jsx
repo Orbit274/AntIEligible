@@ -14,9 +14,9 @@ import CourseNode from "./CourseNode";
 import "@xyflow/react/dist/style.css";
 import "../styles/MainWorkspace.css";
 import axios from "axios";
-import { buildCourseGraph, makeNode, makeEdge } from "../graph/courseGraph";
 import ZoomControls from "./ZoomControls";
 import GraphLegend from "./GraphLegend";
+import {buildFullCourseGraph, makeNode, makeEdge} from "../graph/courseGraph";
 
 const translateExtent = [
   [-100, -1000],
@@ -60,31 +60,30 @@ function MainWorkspace() {
   function closePanel() {
     setIsVisible(false);
   }
-  const [nodes, setNodes, onNodesChange] = useNodesState(startingNodes);
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [isVisible, setIsVisible] = useState(false);
-  function handleNodeClick(event, clickedNode) {
-    const courseCode = clickedNode.id;
-    setSelectedCourse(courseCode);
-    setIsVisible(true);
-  }
-  // Called by the search bar, clears the workspace and shows that course plus its direct prerequisites
-  async function handleSearchSelect(result) {
-    try {
-      const response = await axios.get(
-        `/api/course/${encodeURIComponent(result.id)}`,
-      );
-      const course = response.data;
+      const [nodes, setNodes, onNodesChange] = useNodesState(startingNodes);
+    const [selectedCourse, setSelectedCourse] = useState(null);
+    const [isVisible, setIsVisible] = useState(false);
+    function handleNodeClick(event, clickedNode) {
+        const courseCode = clickedNode.id;
+        setSelectedCourse(courseCode);
+        setIsVisible(true);
+    };
+    // Called by the search bar, clears the workspace and shows that course plus its direct prerequisites
+    async function handleSearchSelect(result) {
+      try {
+        const response = await axios.get(`/api/course-tree/${encodeURIComponent(result.id)}`);
+        const tree = response.data;
 
-      const graph = buildCourseGraph(course);
-      setNodes(graph.nodes);
-      setEdges(graph.edges);
-      setWorkspaceKey((key) => key + 1);
+        const graph = buildFullCourseGraph(tree);
+        setNodes(graph.nodes);
+        setEdges(graph.edges);
+        setWorkspaceKey((key) => key + 1);
 
-      setSelectedCourse(course.id);
-      setIsVisible(true);
-    } catch (err) {
-      console.error("Failed to load course:", err);
+        setSelectedCourse(tree.id);
+        setIsVisible(true);
+      } catch (err) {
+        console.error("Failed to load course:", err);
+      }
     }
   }
   return (
@@ -141,6 +140,5 @@ function MainWorkspace() {
       </div>
     </>
   );
-}
 
 export default MainWorkspace;
