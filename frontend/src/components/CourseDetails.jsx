@@ -1,6 +1,7 @@
 import axios from "axios"
 import { useEffect, useState } from "react";
 import "../styles/CourseDetails.css"
+import { parsePrereqTree, describeRequirements } from "../graph/prereqTree";
 
 function CourseDetails({courseId}){
         const [course, setCourse] = useState(null);
@@ -23,6 +24,8 @@ function CourseDetails({courseId}){
         if (error) return <div>{error}</div>;
         if (!course) return <div>Loading course details...</div>;
         const prereqCourses = loadPrerequisites(course.prerequisites)
+        const parsed = parsePrereqTree(course.prerequisite_tree);
+        const requirements = parsed ? describeRequirements(parsed) : null;
     return (
         <div id="course-details-container">
             <div id="course-detail-header">
@@ -52,8 +55,20 @@ function CourseDetails({courseId}){
                 </div>
                 <div className="label-container">
                     <span className="label">Prerequisites:</span>
-                    <span>{prereqCourses}</span>
+                    {requirements === null && <span>{prereqCourses}</span>}
+                    {requirements !== null && requirements.required.length === 0 && <span>None</span>}
+                    {requirements !== null && requirements.required.length > 0 && (
+                        <ul className="requirement-list">
+                            {requirements.required.map((line) => <li key={line}>{line}</li>)}
+                        </ul>
+                    )}
                 </div>
+                {requirements !== null && requirements.excluded.length > 0 && (
+                    <div className="label-container">
+                        <span className="label">Not open if you have completed:</span>
+                        <span>{requirements.excluded.join(", ")}</span>
+                    </div>
+                )}
                 <p>Notice: {course.prerequisite_text}</p>
             </div>
         </div>
