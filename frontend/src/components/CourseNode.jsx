@@ -1,18 +1,22 @@
-import { applyEdgeChanges, getConnectedEdges, Handle, Position, useReactFlow } from "@xyflow/react";
+import { Handle, Position, useReactFlow } from "@xyflow/react";
 import "../styles/CourseNode.css"
-import { useCallback, useState } from "react";
+// import { useCallback, useState } from "react";
 import axios from "axios";
-import "../graph/courseGraph.js"
-import { addCourseToGraph, removePrereqCourseNode, removePrereqEdge} from "../graph/courseGraph.js";
+import { addCourseToGraph, removePrereqCourseNode } from "../graph/courseGraph.js";
 function CourseNode({id, data}){
-    const {updateNodeData, getEdges, getNodes, setNodes, setEdges, getNode} = useReactFlow();
-    const [branchToggleAction, setBranchToggleAction] = useState(data.isExpanded ? "collapse" : "expand");
+    const {updateNodeData, getEdges, getNodes, setNodes, setEdges, getNode, deleteElements} = useReactFlow();
+    // const [branchToggleAction, setBranchToggleAction] = useState(data.isExpanded ? "collapse" : "expand");
+    const branchToggleAction = data.isExpanded ? "collapse" : "expand";
     function handleChangeStatus(event){
         event.stopPropagation();
 
         updateNodeData(id, {
             status: nextStatus(data.status)
         })
+    }
+    function handleDelete(event) {
+        event.stopPropagation();
+        deleteElements({nodes: [{id}]});
     }
     async function fetchCurrentCourseById(id){
         try{
@@ -26,29 +30,29 @@ function CourseNode({id, data}){
     async function expandToggleHandler(){
         const course = await fetchCurrentCourseById(id);
         const thisNode = getNode(id);
-        if(!course) return;
+        if(!course || !thisNode) return;
         const graph = addCourseToGraph({nodes: getNodes(), edges: getEdges()}, course, {x: thisNode.position.x, y: thisNode.position.y});
         setEdges(graph.edges);
         setNodes(graph.nodes);
-        
     }
     function collapseToggleHandler(){
         const graph = removePrereqCourseNode({nodes : getNodes(), edges: getEdges()}, id);
         setEdges(graph.edges);
-        setNodes(graph.nodes);
-    
+        // setNodes(graph.nodes);
+        setNodes(graph.nodes.map((node) => node.id === id ? {...node, data: {...node.data, isExpanded: false}} : node));
     }
     function handleBranchToggle(event){
         event.stopPropagation();
-        const isExpanded = !data.isExpanded;
-        updateNodeData(id, {isExpanded : isExpanded});
-        setBranchToggleAction(isExpanded? "collapse" : "expand");
+        // const isExpanded = !data.isExpanded;
+        // updateNodeData(id, {isExpanded : isExpanded});
+        // setBranchToggleAction(isExpanded? "collapse" : "expand");
         
-        if(!data.isExpanded){
-            expandToggleHandler();
-        } else {
+        if(data.isExpanded){
             collapseToggleHandler();
-            updateNodeData(id, {isExpanded : isExpanded});
+        } else {
+            // collapseToggleHandler();
+            // updateNodeData(id, {isExpanded : isExpanded});
+            expandToggleHandler();
         }
     }
     
@@ -60,6 +64,7 @@ function CourseNode({id, data}){
                 <button className="progress nodrag nopan" onClick={handleChangeStatus}><img src={`../images/${data.status}-status.png`}></img></button>
                 <button className="branch-toggle" onClick={handleBranchToggle}><img src={`/images/${branchToggleAction}-branch-arrow.png`}></img></button>
             </div>
+            <button className="delete-node nodrag nopan" title="Remove from workspace" aria-label={`Remove ${data.label}`} onClick={handleDelete}>×</button>
             <Handle type="source" position={Position.Left}/>
         </div>
     );
