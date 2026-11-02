@@ -1,8 +1,11 @@
-.search {
-  margin-top: 60px;  
+.search{
+  position: relative;
+  margin-top: 2%;
+  width: 100%;
+  
 }
-
 .search-results {
+  position: absolute;
   display: flex;
   flex-direction: column;
   list-style: none;
@@ -12,7 +15,10 @@
   border: 1px solid #c9d3e0;
   border-radius: 10px;
   max-height: 320px;
+  width: 100%;
   overflow-y: auto;
+  z-index: 1;
+  box-sizing: border-box;
 }
 
 .search-results li {
@@ -38,7 +44,12 @@
 }
 
 .search input {
-  width: 400px;      
-  padding: 10px 14px; 
+  width: 100%;
+  padding: 1% 0;   
+  padding-left: 8px;
+  border: 1px solid black;
+  border-radius: 10px;
   font-size: 15px;
+  box-sizing: border-box;
+  box-shadow: 1px 5px 19px -7px rgba(0, 0, 0, 0.11);
 }

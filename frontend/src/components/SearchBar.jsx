@@ -4,7 +4,7 @@ import "../styles/SearchBar.css";
 
 // Search bar with dropdown of courses
 // When user clicks a class, calls onCourseChosen(course), course is object from /api/search
-export default function SearchBar({onCourseChosen}) {
+export default function SearchBar({ onCourseChosen }) {
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
@@ -19,7 +19,10 @@ export default function SearchBar({onCourseChosen}) {
     let controller = new AbortController();
     let timer = setTimeout(async () => {
       try {
-        const response = await axios.get("/api/search", {params: {q}, signal: controller.signal});
+        const response = await axios.get("/api/search", {
+          params: { q },
+          signal: controller.signal,
+        });
         setResults(response.data);
         setOpen(true);
       } catch (e) {
@@ -32,7 +35,7 @@ export default function SearchBar({onCourseChosen}) {
     return () => {
       clearTimeout(timer);
       controller.abort();
-    }
+    };
   }, [search]);
 
   async function handleChange(event) {
@@ -42,7 +45,7 @@ export default function SearchBar({onCourseChosen}) {
     if (text.trim() === "") {
       setResults([]);
       return;
-    };                            
+    }
   }
 
   function choose(course) {
@@ -73,10 +76,14 @@ export default function SearchBar({onCourseChosen}) {
 
       {open && search.trim() && (
         <ul className="search-results">
-          {results.length === 0 && <li className="search-empty">No courses found</li>}
+          {results.length === 0 && (
+            <li className="search-empty">No courses found</li>
+          )}
           {results.map((course) => (
             <li key={course.id} onMouseDown={() => choose(course)}>
-              <strong>{course.department} {course.course_number}</strong>
+              <strong>
+                {course.department} {course.course_number}
+              </strong>
               <span>{course.title}</span>
             </li>
           ))}

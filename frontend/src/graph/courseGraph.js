@@ -223,6 +223,47 @@ export function addCourseToWorkspace(graph, course) {
   return {graph: merged, focusIds: [...new Set([course.id, ...newIds])]};
 }
 
+// Builds the whole prerequisite tree from /api/course-tree
+// Each course goes in the column of its longest path from the root, so every edge points right to left
+export function buildFullCourseGraph(tree) {
+  const depth = new Map([[tree.id, 0]]);
+  // Relax edges until depths settle, capped so a cycle in the data can't loop forever
+  for (let i = 0; i < tree.courses.length; i++) {
+    let changed = false;
+    for (const e of tree.edges) {
+      const d = (depth.get(e.course_id) ?? 0) + 1;
+      if (d > (depth.get(e.prereq_id) ?? -1)) {
+        depth.set(e.prereq_id, d);
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+
+  const columns = new Map();
+  tree.courses.forEach((c) => {
+    const d = depth.get(c.id) ?? 0;
+    if (!columns.has(d)) columns.set(d, []);
+    columns.get(d).push(c);
+  });
+
+  const hasPrereqs = new Set(tree.edges.map((e) => e.course_id));
+  const nodes = [];
+  columns.forEach((courses, d) => {
+    courses.forEach((c, i) => {
+      const y = (i - (courses.length - 1) / 2) * ROW_GAP;
+      const node = makeNode(c.id, `${c.department} ${c.course_number}`, d * COLUMN_GAP, y);
+      node.data.isExpanded = hasPrereqs.has(c.id);
+      nodes.push(node);
+    });
+  });
+  // Root goes first, cleanUpDisconnectedNode falls back to nodes[0]
+  nodes.sort((a, b) => (a.id === tree.id ? -1 : b.id === tree.id ? 1 : 0));
+
+  const edges = tree.edges.map((e) => makeEdge(e.prereq_id, e.course_id));
+  return { nodes, edges };
+}
+
 // Clear the workspace, same function, start from an empty graph
 export function buildCourseGraph(course) {
   const graph = addCourseToGraph({ nodes: [], edges: [] }, course, { x: 0, y: 0 });

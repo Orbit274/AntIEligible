@@ -1,18 +1,31 @@
 import CourseDetailsPanel from "./CourseDetailsPanel";
-import { ReactFlow, Background, MarkerType, useNodesState, Panel, useEdgesState} from "@xyflow/react";
-import { useCallback, useEffect, useRef, useState} from "react";
+import {
+  ReactFlow,
+  Background,
+  MarkerType,
+  useNodesState,
+  Panel,
+  useEdgesState,
+  ReactFlowProvider,
+} from "@xyflow/react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import SearchBar from "./SearchBar";
-import ResponsiveGraph from "./ResponsiveGraph";
 import CourseNode from "./CourseNode";
 import "@xyflow/react/dist/style.css";
-import "../styles/MainWorkspace.css"
+import "../styles/MainWorkspace.css";
 import axios from "axios";
-import {buildCourseGraph, addCourseToWorkspace, removeCourseFromGraph} from "../graph/courseGraph";
+import ZoomControls from "./ZoomControls";
+import GraphLegend from "./GraphLegend";
+import {buildFullCourseGraph, buildCourseGraph, addCourseToWorkspace, removeCourseFromGraph} from "../graph/courseGraph";
 import LogicNode from "./LogicNode";
 import InfoNode from "./InfoNode";
 import ViewFocus from "./ViewFocus";
+import ResponsiveGraph from "./ResponsiveGraph";
 
-
+const translateExtent = [
+  [-100, -1000],
+  [3000, 1000],
+];
 const nodeTypes = {
   courseNode : CourseNode,
   logicNode : LogicNode,
@@ -110,14 +123,17 @@ function MainWorkspace(){
         latestLoad.current++;
         const flow = flowRef.current;
         const current = flow ? {nodes: flow.getNodes(), edges: flow.getEdges()} : {nodes, edges};
+        // const response = await axios.get(`/api/course-tree/${encodeURIComponent(result.id)}`);
+        // const tree = response.data;
 
         const { graph, focusIds } = addCourseToWorkspace(current, course);
+        // const graph = buildFullCourseGraph(tree);
         setNodes(graph.nodes);
         setEdges(graph.edges);
         setFocusRequest({ ids: focusIds });
         setStatus("ready");
 
-        setSelectedCourse(course.id);
+        setSelectedCourse(tree.id);
         setIsVisible(true);
       } catch (err) {
         console.error("Failed to load course:", err);
@@ -144,50 +160,90 @@ function MainWorkspace(){
       return false;
     }
 
-    return(
-    <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
-    <CourseDetailsPanel courseId={selectedCourse} visible={isVisible} onClose={closePanel} />
-    <div className="workspace-toolbar">
-        <SearchBar onCourseChosen={handleSearchSelect}/>
-        <button className="reset-button" onClick={handleReset}>Reset</button>
-    </div>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onNodeClick={handleNodeClick}
-        onEdgesChange={onEdgesChange}
-        defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed } }}
-        fitView
-        key={workspaceKey}
-        onInit={(instance) => { flowRef.current = instance; }}
-        onBeforeDelete={handleBeforeDelete}
-        deleteKeyCode={["Backspace", "Delete"]}
-      >
-        <Background />
-        <Panel position="bottom-center">
-          {status === "loading" && <div className="workspace-message">Loading...</div>}
-          {status === "failed" && (
-            <div className="workspace-message">
-              Couldn&apos;t load the course. Is the backend running? <button onClick={reload}>Try again</button>
-            </div>
-          )}
-          {status === "ready" && nodes.length === 0 && (
-            <div className="workspace-message">Search for a class to add it to the workspace</div>
-          )}
-        </Panel>
-        <Panel position="bottom-left">
-          <div className="legend">
-            <div><span className="legend-line"></span> required</div>
-            <div><span className="legend-line dashed"></span><span className="legend-or">OR</span> any one of these is enough</div>
+    return (
+    <>
+      <div id="main-body">
+        <div id="main-workspace-container">
+          <div id="main-workspace-header-container">
+            <span className="main-workspace-label">COURSE SEARCH</span>
+            <h1 className="main-workspace-title">
+              Which course do you want to take next?
+            </h1>
+            <p className="search-description">
+              Search any UCI course to map its prerequisites and check your
+              eligibility.
+            </p>
           </div>
-        </Panel>
-        <ViewFocus request={focusRequest} />
-        <ResponsiveGraph />
-      </ReactFlow>
-    </div>
-    );
-}
+          <div id="search-bar-container">
+            <SearchBar onCourseChosen={handleSearchSelect} />
+          </div>
+          <CourseDetailsPanel
+            courseId={selectedCourse}
+            visible={isVisible}
+            onClose={closePanel}
+          />
+          <div id="graph-container">
+            <GraphLegend />
+            <ReactFlowProvider>
+              <ZoomControls />
+              <div id="graph">
+                <ReactFlow
+                  nodes={nodes}
+                  edges={edges}
+                  nodeTypes={nodeTypes}
+                  onNodesChange={onNodesChange}
+                  onNodeClick={handleNodeClick}
+                  onEdgesChange={onEdgesChange}
+                  translateExtent={translateExtent}
+                  proOptions={{ hideAttribution: true }}
+                  defaultEdgeOptions={{
+                    markerEnd: {
+                      type: MarkerType.ArrowClosed,
+                    },
+                  }}
+                  fitView
+                  key={workspaceKey}
+                  onInit={(instance) => {
+                    flowRef.current = instance;
+                  }}
+                  onBeforeDelete={handleBeforeDelete}
+                  deleteKeyCode={["Backspace", "Delete"]}
+                >
+                  <Background />
+                  <Panel position="bottom-center">
+                    {status === "loading" && (
+                      <div className="workspace-message">
+                        Loading...
+                      </div>
+                    )}
+                    {status === "failed" && (
+                      <div className="workspace-message">
+                        Couldn't load the starting course.
+                        Is the backend running?
+                        <button onClick={reload}>
+                          Try again
+                        </button>
+                      </div>
+                    )}
+                    {status === "ready" && nodes.length === 0 && (
+                      <div className="workspace-message">
+                        Search for a class to add it to the workspace.
+                      </div>
+                    )}
+                  </Panel>
+                  <ViewFocus request={focusRequest} />
+                  <ResponsiveGraph />
+                </ReactFlow>
+              </div>
+            </ReactFlowProvider>
+            <button className="reset-button"onClick={handleReset}>
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+  }
 
 export default MainWorkspace;
