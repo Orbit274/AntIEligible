@@ -148,18 +148,4 @@ app.get("/api/course-tree/*id", (req, res) => {
     res.json({id, courses, edges});
 });
 
-
-/** 
-const codeSearch = db.prepare(`
-    SELECT DISTINCT c.id, c.department, c.course_number, c.title, c.min_units
-    FROM courses c
-    LEFT JOIN department_aliases a ON a.department = c.department
-    WHERE REPLACE(UPPER(c.department || c.course_number), ' ', '') LIKE ?
-       OR REPLACE(UPPER(a.alias || c.course_number), ' ', '') LIKE ?
-    LIMIT 20
-  `);
-
-*/
-  
-
 export default app;

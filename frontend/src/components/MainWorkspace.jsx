@@ -8,7 +8,7 @@ import {
   useEdgesState,
   ReactFlowProvider,
 } from "@xyflow/react";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import SearchBar from "./SearchBar";
 import CourseNode from "./CourseNode";
 import "@xyflow/react/dist/style.css";
@@ -16,7 +16,16 @@ import "../styles/MainWorkspace.css";
 import axios from "axios";
 import ZoomControls from "./ZoomControls";
 import GraphLegend from "./GraphLegend";
-import {buildFullCourseGraph, makeNode, makeEdge} from "../graph/courseGraph";
+import {
+  buildFullCourseGraph,
+  buildCourseGraph,
+  addCourseToWorkspace,
+  removeCourseFromGraph,
+} from "../graph/courseGraph";
+import LogicNode from "./LogicNode";
+import InfoNode from "./InfoNode";
+import ViewFocus from "./ViewFocus";
+import ResponsiveGraph from "./ResponsiveGraph";
 
 const translateExtent = [
   [-100, -1000],
@@ -24,68 +33,149 @@ const translateExtent = [
 ];
 const nodeTypes = {
   courseNode: CourseNode,
+  logicNode: LogicNode,
+  infoNode: InfoNode,
 };
 
-const startingNodes = [
-  makeNode("I&CSCI45J", "ICS 45J", 0, 0),
-  makeNode("I&CSCI46", "ICS 46", 0, 150),
-  makeNode("I&CSCI51", "ICS 51", 0, 300),
+const STARTING_COURSE_ID = "COMPSCI161";
 
-  makeNode("I&CSCI45C", "ICS 45C", 300, 75),
-  makeNode("I&CSCI6B", "ICS 6B", 300, 250),
-
-  makeNode("I&CSCI33", "ICS 33", 600, 75),
-  makeNode("I&CSCI32", "ICS 32", 900, 75),
-];
-
-const initialEdges = [
-  { ...makeEdge("I&CSCI33", "I&CSCI45J"), animated: true },
-  { ...makeEdge("I&CSCI45C", "I&CSCI46"), animated: true },
-  { ...makeEdge("I&CSCI6B", "I&CSCI46"), animated: true },
-  makeEdge("I&CSCI6B", "I&CSCI51"),
-  makeEdge("I&CSCI33", "I&CSCI45C"),
-  makeEdge("I&CSCI32", "I&CSCI33"),
-];
-
-function nextStatus(status) {
-  if (status === "not-started") return "in-progress";
-  if (status === "in-progress") return "completed";
-  return "not-started";
+async function fetchCourse(id) {
+  const response = await axios.get(`/api/course/${encodeURIComponent(id)}`);
+  return response.data;
 }
 
 function MainWorkspace() {
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [workspaceKey, setWorkspaceKey] = useState(0);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [status, setStatus] = useState("loading");
+  const [focusRequest, setFocusRequest] = useState({ ids: [] });
+  const flowRef = useRef(null);
+  const latestLoad = useRef(0);
 
   function closePanel() {
     setIsVisible(false);
   }
-      const [nodes, setNodes, onNodesChange] = useNodesState(startingNodes);
-    const [selectedCourse, setSelectedCourse] = useState(null);
-    const [isVisible, setIsVisible] = useState(false);
-    function handleNodeClick(event, clickedNode) {
-        const courseCode = clickedNode.id;
-        setSelectedCourse(courseCode);
-        setIsVisible(true);
-    };
-    // Called by the search bar, clears the workspace and shows that course plus its direct prerequisites
-    async function handleSearchSelect(result) {
-      try {
-        const response = await axios.get(`/api/course-tree/${encodeURIComponent(result.id)}`);
-        const tree = response.data;
 
-        const graph = buildFullCourseGraph(tree);
-        setNodes(graph.nodes);
-        setEdges(graph.edges);
-        setWorkspaceKey((key) => key + 1);
+  // Puts the starting course and its prerequisites on the workspace
+  const showStartingCourse = useCallback(
+    (course) => {
+      const graph = buildCourseGraph(course);
+      setNodes(graph.nodes);
+      setEdges(graph.edges);
+      setWorkspaceKey((key) => key + 1);
+      setFocusRequest({ ids: [] });
+      setSelectedCourse(null);
+      setIsVisible(false);
+      setStatus("ready");
+    },
+    [setNodes, setEdges],
+  );
 
-        setSelectedCourse(tree.id);
-        setIsVisible(true);
-      } catch (err) {
-        console.error("Failed to load course:", err);
-      }
+  // Fetches the starting course and replaces the whole workspace with it
+  async function loadStartingCourse() {
+    const thisLoad = ++latestLoad.current;
+    try {
+      const course = await fetchCourse(STARTING_COURSE_ID);
+      if (thisLoad === latestLoad.current) showStartingCourse(course);
+    } catch (err) {
+      if (thisLoad !== latestLoad.current) return;
+      console.error("Failed to load the starting course:", err);
+      setStatus("failed");
     }
   }
+
+  // Show the starting course
+  useEffect(() => {
+    const thisLoad = ++latestLoad.current;
+    fetchCourse(STARTING_COURSE_ID)
+      .then((course) => {
+        if (thisLoad === latestLoad.current) showStartingCourse(course);
+      })
+      .catch((err) => {
+        if (thisLoad !== latestLoad.current) return;
+        console.error("Failed to load the starting course:", err);
+        setStatus("failed");
+      });
+  }, [showStartingCourse]);
+
+  // Used by Reset and "Try again", show "Loading..." and load the starting course again
+  function reload() {
+    setStatus("loading");
+    loadStartingCourse();
+  }
+
+  function handleReset() {
+    if (
+      !window.confirm(
+        "Reset the workspace? Added courses and progress marks will be cleared.",
+      )
+    ) {
+      return;
+    }
+    reload();
+  }
+
+  function handleNodeClick(event, clickedNode) {
+    if (clickedNode.type !== "courseNode") {
+      return;
+    }
+    const courseCode = clickedNode.id;
+    setSelectedCourse(courseCode);
+    setIsVisible(true);
+  }
+
+  // Called by the search bar, adds the course and its prerequisites to the workspace
+  async function handleSearchSelect(result) {
+    try {
+      const course = await fetchCourse(result.id);
+      latestLoad.current++;
+      const flow = flowRef.current;
+      const current = flow
+        ? { nodes: flow.getNodes(), edges: flow.getEdges() }
+        : { nodes, edges };
+      // const response = await axios.get(`/api/course-tree/${encodeURIComponent(result.id)}`);
+      // const tree = response.data;
+
+      const { graph, focusIds } = addCourseToWorkspace(current, course);
+      // const graph = buildFullCourseGraph(tree);
+      setNodes(graph.nodes);
+      setEdges(graph.edges);
+      setFocusRequest({ ids: focusIds });
+      setStatus("ready");
+
+      setSelectedCourse(tree.id);
+      setIsVisible(true);
+    } catch (err) {
+      console.error("Failed to load course:", err);
+    }
+  }
+
+  // Runs when something is about to be deleted, the delete key on selected nodes, a node's × button
+  // We do the deleting ourselves, so that a course takes its own prerequisites with it
+  // and then tell React Flow not to delete anything
+  async function handleBeforeDelete({ nodes: toDelete }) {
+    const courses = toDelete.filter((node) => node.type === "courseNode");
+    if (courses.length > 0 && flowRef.current) {
+      let graph = {
+        nodes: flowRef.current.getNodes(),
+        edges: flowRef.current.getEdges(),
+      };
+      for (const course of courses) {
+        graph = removeCourseFromGraph(graph, course.id);
+      }
+      setNodes(graph.nodes);
+      setEdges(graph.edges);
+      if (courses.some((course) => course.id === selectedCourse)) {
+        setIsVisible(false);
+        setSelectedCourse(null);
+      }
+    }
+    return false;
+  }
+
   return (
     <>
       <div id="main-body">
@@ -123,22 +213,49 @@ function MainWorkspace() {
                   translateExtent={translateExtent}
                   proOptions={{ hideAttribution: true }}
                   defaultEdgeOptions={{
-                    markerEnd: { type: MarkerType.ArrowClosed },
+                    markerEnd: {
+                      type: MarkerType.ArrowClosed,
+                    },
                   }}
                   fitView
                   key={workspaceKey}
+                  onInit={(instance) => {
+                    flowRef.current = instance;
+                  }}
+                  onBeforeDelete={handleBeforeDelete}
+                  deleteKeyCode={["Backspace", "Delete"]}
                 >
                   <Background />
-                  {/* <Panel position="top-center">
-              <SearchBar onCourseChosen={handleSearchSelect} />
-            </Panel> */}
+                  <Panel position="bottom-center">
+                    {status === "loading" && (
+                      <div className="workspace-message">Loading...</div>
+                    )}
+                    {status === "failed" && (
+                      <div className="workspace-message">
+                        Couldn't load the starting course. Is the backend
+                        running?
+                        <button onClick={reload}>Try again</button>
+                      </div>
+                    )}
+                    {status === "ready" && nodes.length === 0 && (
+                      <div className="workspace-message">
+                        Search for a class to add it to the workspace.
+                      </div>
+                    )}
+                  </Panel>
+                  <ViewFocus request={focusRequest} />
+                  <ResponsiveGraph />
                 </ReactFlow>
               </div>
             </ReactFlowProvider>
+            <button className="reset-button" onClick={handleReset}>
+              Reset
+            </button>
           </div>
         </div>
       </div>
     </>
   );
+}
 
 export default MainWorkspace;
