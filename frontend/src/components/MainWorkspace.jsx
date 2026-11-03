@@ -28,8 +28,8 @@ import ViewFocus from "./ViewFocus";
 import ResponsiveGraph from "./ResponsiveGraph";
 
 const translateExtent = [
-  [-100, -1000],
-  [3000, 1000],
+  [-1500, -3000],
+  [3000, 3000],
 ];
 const nodeTypes = {
   courseNode: CourseNode,
