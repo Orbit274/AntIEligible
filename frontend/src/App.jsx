@@ -9,8 +9,8 @@ import SideBarProgressTracker from "./components/SidebarProgressTracker";
 import { useState } from "react";
 
 export default function App() {
-  const [completedCourses, setCompletedCourses] = useState([]);
-  const [inprogressCourses, setInprogressCourses] = useState([]);
+  const [completedCourses, setCompletedCourses] = useState(new Map());
+  const [inprogressCourses, setInprogressCourses] = useState(new Map());
 
   const courseProgress = {
     completed: {

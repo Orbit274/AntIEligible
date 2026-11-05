@@ -17,10 +17,10 @@ function SideBarProgressTracker({ completedCourses, inprogressCourses }) {
 function CourseList({ courseList, status }) {
   return (
     <div className="tracked-course-container">
-      {courseList.length > 0 ? (
-        courseList.map((course) => (
-          <div key={course.id} className={`tracked-course ${status}`}>
-            {course.label}
+      {courseList.size > 0 ? (
+        [...courseList].map(([key, value]) => (
+          <div key={key} className={`tracked-course ${status}`}>
+            {value}
           </div>
         ))
       ) : (

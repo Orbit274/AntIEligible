@@ -199,39 +199,50 @@ function MainWorkspace({ courseProgress }) {
   function addCourseToSideBar(course, status) {
     if (
       status === CourseStatus.COMPLETED &&
-      !hasCourse(completedCourses, course.id)
+      !completedCourses.has(course.id)
     ) {
-      courseProgress.completed.setCourses([...completedCourses, {id : course.id, label : course.data.label}]);
+      courseProgress.completed.setCourses(completedCourses => {
+        const newCompletedCourses = new Map(completedCourses);
+        newCompletedCourses.set(course.id, course.data.label);
+        return newCompletedCourses;
+      });
     }
     if (
       status === CourseStatus.IN_PROGRESS &&
-      !hasCourse(inprogressCourses, course.id)
+      !inprogressCourses.has(course.id)
     ) {
-      courseProgress.inprogress.setCourses([...inprogressCourses, { id: course.id, label: course.data.label }]);
+      courseProgress.inprogress.setCourses(inprogressCourses => {
+        const newInprogressCourses = new Map(inprogressCourses);
+        newInprogressCourses.set(course.id, course.data.label);
+        return newInprogressCourses;
+      });
     }
   }
 
   function removeCourseFromSideBar(courseId, status) {
     if (
       status === CourseStatus.COMPLETED &&
-      hasCourse(completedCourses, courseId)
+      completedCourses.has(courseId)
     ) {
-      courseProgress.completed.setCourses(completedCourses.filter((course) => course.id !== courseId));
+      courseProgress.completed.setCourses(completedCourses => {
+        const newCompletedCourses = new Map(completedCourses);
+        newCompletedCourses.delete(courseId);
+        return newCompletedCourses;
+      });
     }
 
     if (
       status === CourseStatus.IN_PROGRESS &&
-      hasCourse(inprogressCourses, courseId)
+      inprogressCourses.has(courseId)
     ) {
-      courseProgress.inprogress.setCourses(inprogressCourses.filter((course) => course.id !== courseId));
+      courseProgress.inprogress.setCourses(inprogressCourses => {
+        const newInprogressCourse = new Map(inprogressCourses);
+        newInprogressCourse.delete(courseId);
+        return newInprogressCourse;
+      });
     }
   }
 
-  function hasCourse(courseSet, courseId) {
-    return courseSet.some((course) => {
-      return course.id === courseId;
-    });
-  }
   return (
     <>
       <div id="main-body">
