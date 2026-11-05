@@ -26,6 +26,8 @@ import LogicNode from "./LogicNode";
 import InfoNode from "./InfoNode";
 import ViewFocus from "./ViewFocus";
 import ResponsiveGraph from "./ResponsiveGraph";
+import CourseContext from "./CourseContext";
+import { CourseStatus } from "../enums/courseStatus";
 
 const translateExtent = [
   [-1500, -3000],
@@ -44,7 +46,7 @@ async function fetchCourse(id) {
   return response.data;
 }
 
-function MainWorkspace() {
+function MainWorkspace({ courseProgress }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [workspaceKey, setWorkspaceKey] = useState(0);
@@ -176,6 +178,60 @@ function MainWorkspace() {
     return false;
   }
 
+  const completedCourses = courseProgress.completed.courses;
+  const inprogressCourses = courseProgress.inprogress.courses;
+
+  function handleSideBarCourse(course) {
+    if (course.status === CourseStatus.COMPLETED) {
+      removeCourseFromSideBar(course.id, CourseStatus.IN_PROGRESS);
+      addCourseToSideBar(course, CourseStatus.COMPLETED);
+    }
+    if (course.status === CourseStatus.IN_PROGRESS) {
+      removeCourseFromSideBar(course.id, CourseStatus.COMPLETED);
+      addCourseToSideBar(course, CourseStatus.IN_PROGRESS);
+    }
+    if (course.status === CourseStatus.NOT_STARTED) {
+      removeCourseFromSideBar(course.id, CourseStatus.IN_PROGRESS);
+      removeCourseFromSideBar(course.id, CourseStatus.COMPLETED);
+    }
+  }
+
+  function addCourseToSideBar(course, status) {
+    if (
+      status === CourseStatus.COMPLETED &&
+      !hasCourse(completedCourses, course.id)
+    ) {
+      courseProgress.completed.setCourses([...completedCourses, {id : course.id, label : course.data.label}]);
+    }
+    if (
+      status === CourseStatus.IN_PROGRESS &&
+      !hasCourse(inprogressCourses, course.id)
+    ) {
+      courseProgress.inprogress.setCourses([...inprogressCourses, { id: course.id, label: course.data.label }]);
+    }
+  }
+
+  function removeCourseFromSideBar(courseId, status) {
+    if (
+      status === CourseStatus.COMPLETED &&
+      hasCourse(completedCourses, courseId)
+    ) {
+      courseProgress.completed.setCourses(completedCourses.filter((course) => course.id !== courseId));
+    }
+
+    if (
+      status === CourseStatus.IN_PROGRESS &&
+      hasCourse(inprogressCourses, courseId)
+    ) {
+      courseProgress.inprogress.setCourses(inprogressCourses.filter((course) => course.id !== courseId));
+    }
+  }
+
+  function hasCourse(courseSet, courseId) {
+    return courseSet.some((course) => {
+      return course.id === courseId;
+    });
+  }
   return (
     <>
       <div id="main-body">
@@ -203,49 +259,55 @@ function MainWorkspace() {
             <ReactFlowProvider>
               <ZoomControls />
               <div id="graph">
-                <ReactFlow
-                  nodes={nodes}
-                  edges={edges}
-                  nodeTypes={nodeTypes}
-                  onNodesChange={onNodesChange}
-                  onNodeClick={handleNodeClick}
-                  onEdgesChange={onEdgesChange}
-                  translateExtent={translateExtent}
-                  proOptions={{ hideAttribution: true }}
-                  defaultEdgeOptions={{
-                    markerEnd: {
-                      type: MarkerType.ArrowClosed,
-                    },
+                <CourseContext.Provider
+                  value={{
+                    handleSideBarCourse,
                   }}
-                  fitView
-                  key={workspaceKey}
-                  onInit={(instance) => {
-                    flowRef.current = instance;
-                  }}
-                  onBeforeDelete={handleBeforeDelete}
-                  deleteKeyCode={["Backspace", "Delete"]}
                 >
-                  <Background />
-                  <Panel position="bottom-center">
-                    {status === "loading" && (
-                      <div className="workspace-message">Loading...</div>
-                    )}
-                    {status === "failed" && (
-                      <div className="workspace-message">
-                        Couldn't load the starting course. Is the backend
-                        running?
-                        <button onClick={reload}>Try again</button>
-                      </div>
-                    )}
-                    {status === "ready" && nodes.length === 0 && (
-                      <div className="workspace-message">
-                        Search for a class to add it to the workspace.
-                      </div>
-                    )}
-                  </Panel>
-                  <ViewFocus request={focusRequest} />
-                  <ResponsiveGraph />
-                </ReactFlow>
+                  <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    nodeTypes={nodeTypes}
+                    onNodesChange={onNodesChange}
+                    onNodeClick={handleNodeClick}
+                    onEdgesChange={onEdgesChange}
+                    translateExtent={translateExtent}
+                    proOptions={{ hideAttribution: true }}
+                    defaultEdgeOptions={{
+                      markerEnd: {
+                        type: MarkerType.ArrowClosed,
+                      },
+                    }}
+                    fitView
+                    key={workspaceKey}
+                    onInit={(instance) => {
+                      flowRef.current = instance;
+                    }}
+                    onBeforeDelete={handleBeforeDelete}
+                    deleteKeyCode={["Backspace", "Delete"]}
+                  >
+                    <Background />
+                    <Panel position="bottom-center">
+                      {status === "loading" && (
+                        <div className="workspace-message">Loading...</div>
+                      )}
+                      {status === "failed" && (
+                        <div className="workspace-message">
+                          Couldn't load the starting course. Is the backend
+                          running?
+                          <button onClick={reload}>Try again</button>
+                        </div>
+                      )}
+                      {status === "ready" && nodes.length === 0 && (
+                        <div className="workspace-message">
+                          Search for a class to add it to the workspace.
+                        </div>
+                      )}
+                    </Panel>
+                    <ViewFocus request={focusRequest} />
+                    <ResponsiveGraph />
+                  </ReactFlow>
+                </CourseContext.Provider>
               </div>
             </ReactFlowProvider>
             <button className="reset-button" onClick={handleReset}>

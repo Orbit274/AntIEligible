@@ -1,5 +1,6 @@
 import { Handle, Position, useReactFlow } from "@xyflow/react";
 import "../styles/CourseNode.css";
+import "../enums/courseStatus.js";
 // import { useCallback, useState } from "react";
 import axios from "axios";
 import {
@@ -7,6 +8,8 @@ import {
   removePrereqCourseNode,
 } from "../graph/courseGraph.js";
 import { useEffect, useRef, useState } from "react";
+import { CourseStatus } from "../enums/courseStatus.js";
+import { useCourseContext } from "./CourseContext.jsx";
 function CourseNode({ id, data }) {
   const {
     updateNodeData,
@@ -17,6 +20,7 @@ function CourseNode({ id, data }) {
     getNode,
     deleteElements,
   } = useReactFlow();
+  const { handleSideBarCourse } = useCourseContext();
   const [showSelecteOption, setShowSelectOption] = useState(false);
   const tabRef = useRef(null);
   useEffect(() => {
@@ -93,6 +97,7 @@ function CourseNode({ id, data }) {
     updateNodeData(id, {
       status: status,
     });
+    handleSideBarCourse({ id, data, status });
   }
   return (
     <div key={id} className={`course-node-container ${data.status}`}>
@@ -114,19 +119,19 @@ function CourseNode({ id, data }) {
           <span>Mark course as...</span>
           <button
             className="select-button"
-            onClick={() => handleSelectStatusOption("completed")}
+            onClick={() => handleSelectStatusOption(CourseStatus.COMPLETED)}
           >
             Completed
           </button>
           <button
             className="select-button"
-            onClick={() => handleSelectStatusOption("in-progress")}
+            onClick={() => handleSelectStatusOption(CourseStatus.IN_PROGRESS)}
           >
             In-progress
           </button>
           <button
             className="select-button"
-            onClick={() => handleSelectStatusOption("not-started")}
+            onClick={() => handleSelectStatusOption(CourseStatus.NOT_STARTED)}
           >
             Not-started
           </button>
@@ -144,10 +149,10 @@ function CourseNode({ id, data }) {
     </div>
   );
 }
-function nextStatus(status) {
-  if (status === "not-started") return "in-progress";
-  if (status === "in-progress") return "completed";
-  return "not-started";
-}
+// function nextStatus(status) {
+//   if (status === "not-started") return "in-progress";
+//   if (status === "in-progress") return "completed";
+//   return "not-started";
+// }
 
 export default CourseNode;

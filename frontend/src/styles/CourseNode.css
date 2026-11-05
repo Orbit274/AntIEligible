@@ -21,11 +21,13 @@
 }
 
 .in-progress{
-    background-color: yellow;
+    background-color: #fef3c7;
+    color: #92400e;
 }
 
 .completed{
-    background-color: lime;
+    background-color: #d1fae5;
+    color: #065f46;
 }
 .node{
     display: flex;
@@ -97,6 +99,7 @@
 }
 
 .select-option-container{
+    color: black !important;
     display: flex;
     flex-direction: column;
     background-color: #0fe7fa;

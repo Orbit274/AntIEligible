@@ -33,11 +33,16 @@ hr{
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
+    margin-top: 4%;
+    gap: 10px;
 }
 
 .tracked-course{
     display: flex;
     flex-direction: row;
+    font-size: clamp(8px, 0.8vw, 14px);
+    border-radius: 15px;
+    padding: 3%;
+    box-shadow: 7px 11px 51px -15px rgba(0,0,0,0.63);
 }
-
 
