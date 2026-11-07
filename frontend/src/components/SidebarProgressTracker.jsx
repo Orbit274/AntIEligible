@@ -5,11 +5,20 @@ function SideBarProgressTracker({ completedCourses, inprogressCourses }) {
       <span id="sidebar-title">
         Course Tracker <br />
       </span>
-      <span className="side-bar-label">Completed Courses</span>
-      <CourseList courseList={completedCourses} status={"completed"} />
       <hr></hr>
-      <span className="side-bar-label">In-progress Courses</span>
-      <CourseList courseList={inprogressCourses}  status={"in-progress"}/>
+      <div className="sidebar-label-container">
+        <span className="sidebar-label">Completed Courses</span>
+        <span className="course-counter">{completedCourses.size}</span>
+      </div>
+      <CourseList courseList={completedCourses} status={"completed"} />
+
+      <hr></hr>
+
+      <div className="sidebar-label-container">
+        <span className="sidebar-label">In-progress Courses</span>
+        <span className="course-counter">{inprogressCourses.size}</span>
+      </div>
+      <CourseList courseList={inprogressCourses} status={"in-progress"} />
     </div>
   );
 }

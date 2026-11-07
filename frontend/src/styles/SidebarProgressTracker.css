@@ -17,13 +17,25 @@
     margin-bottom: 2%;
 }
 
-.side-bar-label{
+.sidebar-label-container{
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    align-items: flex-end;
     font-family: Arial, sans-serif;
     font-size: clamp(9px, 1vw, 20px);
+}
+.sidebar-label{
     font-weight: 600;
     color: #172b4d;
 }
-
+.course-counter{
+    background-color: #f4f4f5;
+    padding: 3px 6px;
+    border-radius: 5px;
+    margin-left: auto;
+    box-shadow: 7px 11px 51px -15px rgba(0,0,0,0.63);
+}
 hr{
     border: none;
     border-top: 1px solid #e0e4eb;
