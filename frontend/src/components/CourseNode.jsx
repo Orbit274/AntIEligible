@@ -102,7 +102,7 @@ function CourseNode({ id, data }) {
     updateNodeData(id, {
       status: status,
     });
-    handleSideBarCourse({ id, data, status });
+    handleSideBarCourse({ id, data: { ...data, status: status } });
   }
   return (
     <div key={id} className={`course-node-container ${data.status}`}>

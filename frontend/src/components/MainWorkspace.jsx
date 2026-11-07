@@ -79,7 +79,12 @@ function MainWorkspace({ courseProgress }) {
     },
     [setNodes, setEdges],
   );
-
+  /**
+   * This function apply the course's status from the course tracker to the graph
+   * @param graph : the graph that need to be applied status
+   * @param param1 : a set of two course collections from course tracker (completed and in-progress collection)
+   * @returns new graph with the nodes are applied status
+   */
   function applyCourseStatusFromSidebar(
     graph,
     { completedCourses, inprogressCourses },
@@ -202,21 +207,31 @@ function MainWorkspace({ courseProgress }) {
   const completedCourses = courseProgress.completed.courses;
   const inprogressCourses = courseProgress.inprogress.courses;
 
+  /**
+   * Handle adding and removing courses from the sidebar when the course's status is changed directly on the graph
+   * @param course : course node
+   */
   function handleSideBarCourse(course) {
-    if (course.status === CourseStatus.COMPLETED) {
+    if (course.data.status === CourseStatus.COMPLETED) {
       removeCourseFromSideBar(course.id, CourseStatus.IN_PROGRESS);
       addCourseToSideBar(course, CourseStatus.COMPLETED);
     }
-    if (course.status === CourseStatus.IN_PROGRESS) {
+    if (course.data.status === CourseStatus.IN_PROGRESS) {
       removeCourseFromSideBar(course.id, CourseStatus.COMPLETED);
       addCourseToSideBar(course, CourseStatus.IN_PROGRESS);
     }
-    if (course.status === CourseStatus.NOT_STARTED) {
+    if (course.data.status === CourseStatus.NOT_STARTED) {
       removeCourseFromSideBar(course.id, CourseStatus.IN_PROGRESS);
       removeCourseFromSideBar(course.id, CourseStatus.COMPLETED);
     }
   }
 
+  /** 
+    Add the course to course collection on course tracker sidebar. The not-started status would not be tracked
+    There are two collections: completed course and in-progress course collections
+    @param course: course node
+    @param status: status of course node which node is changing to (completed or in progress)
+  */
   function addCourseToSideBar(course, status) {
     if (status === CourseStatus.COMPLETED && !completedCourses.has(course.id)) {
       courseProgress.completed.setCourses((completedCourses) => {
@@ -237,6 +252,11 @@ function MainWorkspace({ courseProgress }) {
     }
   }
 
+  /**
+   * Remove a course from course tracker sidebar.
+   * @param courseId: course id
+   * @param status: status of course node which node is changing from
+   */
   function removeCourseFromSideBar(courseId, status) {
     if (status === CourseStatus.COMPLETED && completedCourses.has(courseId)) {
       courseProgress.completed.setCourses((completedCourses) => {
