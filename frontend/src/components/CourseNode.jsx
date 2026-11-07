@@ -20,7 +20,8 @@ function CourseNode({ id, data }) {
     getNode,
     deleteElements,
   } = useReactFlow();
-  const { handleSideBarCourse } = useCourseContext();
+  const { handleSideBarCourse, courseProgress, applyCourseStatusFromSidebar } =
+    useCourseContext();
   const [showSelecteOption, setShowSelectOption] = useState(false);
   const tabRef = useRef(null);
   useEffect(() => {
@@ -65,8 +66,12 @@ function CourseNode({ id, data }) {
       course,
       { x: thisNode.position.x, y: thisNode.position.y },
     );
-    setEdges(graph.edges);
-    setNodes(graph.nodes);
+    const appliedCourseStatusGraph = applyCourseStatusFromSidebar(graph, {
+      completedCourses: courseProgress.completed.courses,
+      inprogressCourses: courseProgress.inprogress.courses,
+    });
+    setEdges(appliedCourseStatusGraph.edges);
+    setNodes(appliedCourseStatusGraph.nodes);
   }
   function collapseToggleHandler() {
     const graph = removePrereqCourseNode(

@@ -65,8 +65,12 @@ function MainWorkspace({ courseProgress }) {
   const showStartingCourse = useCallback(
     (course) => {
       const graph = buildCourseGraph(course);
-      setNodes(graph.nodes);
-      setEdges(graph.edges);
+      const appliedCourseStatusGraph = applyCourseStatusFromSidebar(graph, {
+        completedCourses: courseProgress.completed.courses,
+        inprogressCourses: courseProgress.inprogress.courses,
+      });
+      setNodes(appliedCourseStatusGraph.nodes);
+      setEdges(appliedCourseStatusGraph.edges);
       setWorkspaceKey((key) => key + 1);
       setFocusRequest({ ids: [] });
       setSelectedCourse(null);
@@ -76,6 +80,19 @@ function MainWorkspace({ courseProgress }) {
     [setNodes, setEdges],
   );
 
+  function applyCourseStatusFromSidebar(
+    graph,
+    { completedCourses, inprogressCourses },
+  ) {
+    graph.nodes.forEach((node) => {
+      if (completedCourses.has(node.id))
+        node.data.status = CourseStatus.COMPLETED;
+      if (inprogressCourses.has(node.id))
+        node.data.status = CourseStatus.IN_PROGRESS;
+    });
+
+    return graph;
+  }
   // Fetches the starting course and replaces the whole workspace with it
   async function loadStartingCourse() {
     const thisLoad = ++latestLoad.current;
@@ -143,8 +160,12 @@ function MainWorkspace({ courseProgress }) {
 
       const { graph, focusIds } = addCourseToWorkspace(current, course);
       // const graph = buildFullCourseGraph(tree);
-      setNodes(graph.nodes);
-      setEdges(graph.edges);
+      const appliedStatusGraph = applyCourseStatusFromSidebar(graph, {
+        completedCourses: courseProgress.completed.courses,
+        inprogressCourses: courseProgress.inprogress.courses,
+      });
+      setNodes(appliedStatusGraph.nodes);
+      setEdges(appliedStatusGraph.edges);
       setFocusRequest({ ids: focusIds });
       setStatus("ready");
 
@@ -197,11 +218,8 @@ function MainWorkspace({ courseProgress }) {
   }
 
   function addCourseToSideBar(course, status) {
-    if (
-      status === CourseStatus.COMPLETED &&
-      !completedCourses.has(course.id)
-    ) {
-      courseProgress.completed.setCourses(completedCourses => {
+    if (status === CourseStatus.COMPLETED && !completedCourses.has(course.id)) {
+      courseProgress.completed.setCourses((completedCourses) => {
         const newCompletedCourses = new Map(completedCourses);
         newCompletedCourses.set(course.id, course.data.label);
         return newCompletedCourses;
@@ -211,7 +229,7 @@ function MainWorkspace({ courseProgress }) {
       status === CourseStatus.IN_PROGRESS &&
       !inprogressCourses.has(course.id)
     ) {
-      courseProgress.inprogress.setCourses(inprogressCourses => {
+      courseProgress.inprogress.setCourses((inprogressCourses) => {
         const newInprogressCourses = new Map(inprogressCourses);
         newInprogressCourses.set(course.id, course.data.label);
         return newInprogressCourses;
@@ -220,11 +238,8 @@ function MainWorkspace({ courseProgress }) {
   }
 
   function removeCourseFromSideBar(courseId, status) {
-    if (
-      status === CourseStatus.COMPLETED &&
-      completedCourses.has(courseId)
-    ) {
-      courseProgress.completed.setCourses(completedCourses => {
+    if (status === CourseStatus.COMPLETED && completedCourses.has(courseId)) {
+      courseProgress.completed.setCourses((completedCourses) => {
         const newCompletedCourses = new Map(completedCourses);
         newCompletedCourses.delete(courseId);
         return newCompletedCourses;
@@ -235,7 +250,7 @@ function MainWorkspace({ courseProgress }) {
       status === CourseStatus.IN_PROGRESS &&
       inprogressCourses.has(courseId)
     ) {
-      courseProgress.inprogress.setCourses(inprogressCourses => {
+      courseProgress.inprogress.setCourses((inprogressCourses) => {
         const newInprogressCourse = new Map(inprogressCourses);
         newInprogressCourse.delete(courseId);
         return newInprogressCourse;
@@ -273,6 +288,8 @@ function MainWorkspace({ courseProgress }) {
                 <CourseContext.Provider
                   value={{
                     handleSideBarCourse,
+                    courseProgress,
+                    applyCourseStatusFromSidebar,
                   }}
                 >
                   <ReactFlow
