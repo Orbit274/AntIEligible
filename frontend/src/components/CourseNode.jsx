@@ -1,6 +1,5 @@
 import { Handle, Position, useReactFlow } from "@xyflow/react";
 import "../styles/CourseNode.css";
-import "../enums/courseStatus.js";
 // import { useCallback, useState } from "react";
 import axios from "axios";
 import {
@@ -8,8 +7,8 @@ import {
   removePrereqCourseNode,
 } from "../graph/courseGraph.js";
 import { useEffect, useRef, useState } from "react";
-import { CourseStatus } from "../enums/courseStatus.js";
 import { useCourseContext } from "./CourseContext.jsx";
+import ProgressSelection from "./ProgressSelection.jsx";
 function CourseNode({ id, data }) {
   const {
     updateNodeData,
@@ -108,7 +107,9 @@ function CourseNode({ id, data }) {
     <div key={id} className={`course-node-container ${data.status}`}>
       <Handle type="target" position={Position.Right} />
       <div className="node" ref={tabRef}>
-        <span id="course-id">{data.label}</span>
+        <div className="node-course-title-container">
+          <span id="course-id">{data.label}</span>
+        </div>
         <button className="progress nodrag nopan" onClick={handleChangeStatus}>
           <img src={`../images/${data.status}-status.png`}></img>
         </button>
@@ -117,30 +118,9 @@ function CourseNode({ id, data }) {
         </button>
       </div>
       {showSelecteOption && (
-        <div
-          className="select-option-container"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <span>Mark course as...</span>
-          <button
-            className="select-button"
-            onClick={() => handleSelectStatusOption(CourseStatus.COMPLETED)}
-          >
-            Completed
-          </button>
-          <button
-            className="select-button"
-            onClick={() => handleSelectStatusOption(CourseStatus.IN_PROGRESS)}
-          >
-            In-progress
-          </button>
-          <button
-            className="select-button"
-            onClick={() => handleSelectStatusOption(CourseStatus.NOT_STARTED)}
-          >
-            Not-started
-          </button>
-        </div>
+        <ProgressSelection
+          handleSelectStatusOption={handleSelectStatusOption}
+        />
       )}
       <button
         className="delete-node nodrag nopan"
@@ -154,10 +134,5 @@ function CourseNode({ id, data }) {
     </div>
   );
 }
-// function nextStatus(status) {
-//   if (status === "not-started") return "in-progress";
-//   if (status === "in-progress") return "completed";
-//   return "not-started";
-// }
 
 export default CourseNode;
