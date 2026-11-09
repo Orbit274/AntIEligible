@@ -224,16 +224,58 @@ export function addCourseToWorkspace(graph, course) {
 }
 
 // Builds the whole prerequisite tree from /api/course-tree
-// Each course goes in the column of its longest path from the root, so every edge points right to left
+// Each course is read with parsePrereqTree, so OR groups get the same circle + dashed lines as addTreePrerequisites
+// Every node goes in the column of its longest path from the root, so every edge points right to left
 export function buildFullCourseGraph(tree) {
+  // What each node is, positions are filled in once the columns are known
+  const kinds = new Map();
+  const edges = [];
+  const addKind = (id, kind) => {
+    if (!kinds.has(id)) kinds.set(id, kind);
+  };
+  const addLeaf = (leaf) =>
+    addKind(leaf.id, leaf.type === "exam" ? { type: "exam", label: leaf.label } : { type: "course", label: leaf.label });
+
+  tree.courses.forEach((c) => addKind(c.id, { type: "course", label: `${c.department} ${c.course_number}` }));
+
+  tree.courses.forEach((c) => {
+    const parsed = parsePrereqTree(c.prerequisite_tree);
+    // Tree we can't read, fall back to the flat edges for this course
+    if (!parsed) {
+      tree.edges
+        .filter((e) => e.course_id === c.id)
+        .forEach((e) => pushEdge(edges, makeEdge(e.prereq_id, c.id)));
+      return;
+    }
+    parsed.required.forEach((item, index) => {
+      if (item.type !== "oneOf") {
+        addLeaf(item);
+        pushEdge(edges, { ...makeEdge(item.id, c.id), data: { minGrade: item.minGrade, coreq: item.coreq ?? false } });
+        return;
+      }
+      const orId = `or:${c.id}:${index}`;
+      addKind(orId, { type: "or" });
+      pushEdge(edges, makeEdge(orId, c.id));
+      item.options.forEach((option) => {
+        addLeaf(option);
+        pushEdge(edges, {
+          ...makeEdge(option.id, orId),
+          style: DASHED,
+          data: { minGrade: option.minGrade, coreq: option.coreq ?? false },
+        });
+      });
+    });
+  });
+
+  // An edge goes source (prerequisite) -> target (course that needs it)
   const depth = new Map([[tree.id, 0]]);
   // Relax edges until depths settle, capped so a cycle in the data can't loop forever
-  for (let i = 0; i < tree.courses.length; i++) {
+  for (let i = 0; i < kinds.size; i++) {
     let changed = false;
-    for (const e of tree.edges) {
-      const d = (depth.get(e.course_id) ?? 0) + 1;
-      if (d > (depth.get(e.prereq_id) ?? -1)) {
-        depth.set(e.prereq_id, d);
+    for (const e of edges) {
+      const d = (depth.get(e.target) ?? 0) + 1;
+      if (d > (depth.get(e.source) ?? -1)) {
+        depth.set(e.source, d);
         changed = true;
       }
     }
@@ -241,26 +283,33 @@ export function buildFullCourseGraph(tree) {
   }
 
   const columns = new Map();
-  tree.courses.forEach((c) => {
-    const d = depth.get(c.id) ?? 0;
+  kinds.forEach((kind, id) => {
+    const d = depth.get(id) ?? 0;
     if (!columns.has(d)) columns.set(d, []);
-    columns.get(d).push(c);
+    columns.get(d).push(id);
   });
 
-  const hasPrereqs = new Set(tree.edges.map((e) => e.course_id));
+  const hasPrereqs = new Set(edges.map((e) => e.target));
   const nodes = [];
-  columns.forEach((courses, d) => {
-    courses.forEach((c, i) => {
-      const y = (i - (courses.length - 1) / 2) * ROW_GAP;
-      const node = makeNode(c.id, `${c.department} ${c.course_number}`, d * COLUMN_GAP, y);
-      node.data.isExpanded = hasPrereqs.has(c.id);
-      nodes.push(node);
+  columns.forEach((ids, d) => {
+    ids.forEach((id, i) => {
+      const kind = kinds.get(id);
+      const x = d * COLUMN_GAP;
+      const y = (i - (ids.length - 1) / 2) * ROW_GAP;
+      if (kind.type === "or") {
+        nodes.push(makeLogicNode(id, x, y));
+      } else if (kind.type === "exam") {
+        nodes.push(makeInfoNode(id, kind.label, x, y, "exam"));
+      } else {
+        const node = makeNode(id, kind.label, x, y);
+        node.data.isExpanded = hasPrereqs.has(id);
+        nodes.push(node);
+      }
     });
   });
   // Root goes first, cleanUpDisconnectedNode falls back to nodes[0]
   nodes.sort((a, b) => (a.id === tree.id ? -1 : b.id === tree.id ? 1 : 0));
 
-  const edges = tree.edges.map((e) => makeEdge(e.prereq_id, e.course_id));
   return { nodes, edges };
 }
 

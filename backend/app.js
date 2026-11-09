@@ -61,7 +61,7 @@ const prereqEdges = db.prepare(`
     SELECT course_id, prereq_id FROM chain
   `);
 
-const courseLabelStmt = db.prepare("SELECT id, department, course_number, title FROM courses WHERE id = ?");
+const courseLabelStmt = db.prepare("SELECT id, department, course_number, title, prerequisite_tree FROM courses WHERE id = ?");
 
 
 app.get("/api/search", (req, res) => {
@@ -144,7 +144,10 @@ app.get("/api/course-tree/*id", (req, res) => {
         ids.add(e.course_id);
         ids.add(e.prereq_id);
     }
-    const courses = [...ids].map((courseId) => courseLabelStmt.get(courseId)).filter(Boolean);
+    const courses = [...ids]
+        .map((courseId) => courseLabelStmt.get(courseId))
+        .filter(Boolean)
+        .map((c) => ({...c, prerequisite_tree: JSON.parse(c.prerequisite_tree || "{}")}));
     res.json({id, courses, edges});
 });
 

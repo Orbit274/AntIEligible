@@ -31,7 +31,7 @@ import { CourseStatus } from "../enums/courseStatus";
 
 const translateExtent = [
   [-1500, -3000],
-  [3000, 3000],
+  [6000, 3000],
 ];
 const nodeTypes = {
   courseNode: CourseNode,
