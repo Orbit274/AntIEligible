@@ -26,6 +26,7 @@ import LogicNode from "./LogicNode";
 import InfoNode from "./InfoNode";
 import ViewFocus from "./ViewFocus";
 import ResponsiveGraph from "./ResponsiveGraph";
+import GraphScrollbars from "./GraphScrollbars";
 import CourseContext from "./CourseContext";
 import { CourseStatus } from "../enums/courseStatus";
 
@@ -349,6 +350,8 @@ function MainWorkspace({ courseProgress }) {
                     }}
                     onBeforeDelete={handleBeforeDelete}
                     deleteKeyCode={["Backspace", "Delete"]}
+                    panOnScroll
+                    zoomOnScroll={false}
                   >
                     <Background />
                     <Panel position="bottom-center">
@@ -369,6 +372,7 @@ function MainWorkspace({ courseProgress }) {
                       )}
                     </Panel>
                     <ViewFocus request={focusRequest} />
+                    <GraphScrollbars />
                     <ResponsiveGraph />
                   </ReactFlow>
                 </CourseContext.Provider>

@@ -1,0 +1,46 @@
+.graph-scrollbar{
+    position: absolute;
+    z-index: 5;
+    background-color: rgba(0, 0, 0, 0.04);
+    border-radius: 6px;
+}
+
+/* Starts after the zoom buttons in the bottom left corner */
+.graph-scrollbar.horizontal{
+    left: 120px;
+    right: 22px;
+    bottom: 6px;
+    height: 10px;
+}
+
+.graph-scrollbar.vertical{
+    top: 8px;
+    bottom: 22px;
+    right: 6px;
+    width: 10px;
+}
+
+.graph-scrollbar-thumb{
+    position: absolute;
+    border-radius: 6px;
+    background-color: rgba(0, 0, 0, 0.25);
+    cursor: grab;
+}
+
+.graph-scrollbar-thumb:hover{
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.graph-scrollbar-thumb:active{
+    cursor: grabbing;
+}
+
+.graph-scrollbar.horizontal .graph-scrollbar-thumb{
+    top: 0;
+    bottom: 0;
+}
+
+.graph-scrollbar.vertical .graph-scrollbar-thumb{
+    left: 0;
+    right: 0;
+}
