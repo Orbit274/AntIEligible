@@ -16,7 +16,7 @@ import "../styles/MainWorkspace.css";
 import axios from "axios";
 import ZoomControls from "./ZoomControls";
 import GraphLegend from "./GraphLegend";
-import {buildFullCourseGraph, buildCourseGraph, addCourseToWorkspace, removeCourseFromGraph} from "../graph/courseGraph";
+import {buildCourseGraph, addCourseToWorkspace, addFullTreeToWorkspace, removeCourseFromGraph} from "../graph/courseGraph";
 import LogicNode from "./LogicNode";
 import InfoNode from "./InfoNode";
 import ViewFocus from "./ViewFocus";
@@ -39,6 +39,11 @@ async function fetchCourse(id) {
   return response.data;
 }
 
+async function fetchCourseTree(id) {
+  const response = await axios.get(`/api/course-tree/${encodeURIComponent(id)}`);
+  return response.data;
+}
+
 
 function MainWorkspace(){
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -48,6 +53,7 @@ function MainWorkspace(){
     const [isVisible, setIsVisible] = useState(false);
     const [status, setStatus] = useState("loading");
     const [focusRequest, setFocusRequest] = useState({ ids: [] });
+    const [showFullTree, setShowFullTree] = useState(false);
     const flowRef = useRef(null);
     const latestLoad = useRef(0);
 
@@ -119,21 +125,21 @@ function MainWorkspace(){
     // Called by the search bar, adds the course and its prerequisites to the workspace
     async function handleSearchSelect(result) {
       try {
-        const course = await fetchCourse(result.id);
+        // Full tree mode gets every prerequisite down the chain, otherwise just the first layer
+        const data = showFullTree ? await fetchCourseTree(result.id) : await fetchCourse(result.id);
         latestLoad.current++;
         const flow = flowRef.current;
         const current = flow ? {nodes: flow.getNodes(), edges: flow.getEdges()} : {nodes, edges};
-        // const response = await axios.get(`/api/course-tree/${encodeURIComponent(result.id)}`);
-        // const tree = response.data;
 
-        const { graph, focusIds } = addCourseToWorkspace(current, course);
-        // const graph = buildFullCourseGraph(tree);
+        const { graph, focusIds } = showFullTree
+          ? addFullTreeToWorkspace(current, data)
+          : addCourseToWorkspace(current, data);
         setNodes(graph.nodes);
         setEdges(graph.edges);
         setFocusRequest({ ids: focusIds });
         setStatus("ready");
 
-        setSelectedCourse(tree.id);
+        setSelectedCourse(data.id);
         setIsVisible(true);
       } catch (err) {
         console.error("Failed to load course:", err);
@@ -176,6 +182,9 @@ function MainWorkspace(){
           </div>
           <div id="search-bar-container">
             <SearchBar onCourseChosen={handleSearchSelect} />
+            <button className="tree-toggle" onClick={() => setShowFullTree((full) => !full)}>
+              {showFullTree ? "Full tree" : "First layer"}
+            </button>
           </div>
           <CourseDetailsPanel
             courseId={selectedCourse}

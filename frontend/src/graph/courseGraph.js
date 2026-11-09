@@ -264,6 +264,27 @@ export function buildFullCourseGraph(tree) {
   return { nodes, edges };
 }
 
+// Adds a course's whole prerequisite tree to the current workspace, placed below what's already there
+// Courses already on the workspace are reused, only the new ones are placed
+export function addFullTreeToWorkspace(graph, tree) {
+  const full = buildFullCourseGraph(tree);
+  const oldIds = new Set(graph.nodes.map((n) => n.id));
+  let dy = 0;
+  if (graph.nodes.length > 0) {
+    const topOfNewTree = Math.min(...full.nodes.map((n) => n.position.y));
+    const bottomOfWorkspace = Math.max(...graph.nodes.map((n) => n.position.y)) + NODE_HEIGHT;
+    dy = bottomOfWorkspace + TREE_GAP - topOfNewTree;
+  }
+  const newNodes = full.nodes
+    .filter((n) => !oldIds.has(n.id))
+    .map((n) => ({ ...n, position: { x: n.position.x, y: n.position.y + dy } }));
+  const edges = [...graph.edges];
+  full.edges.forEach((edge) => pushEdge(edges, edge));
+
+  const merged = pinNode({ nodes: [...graph.nodes, ...newNodes], edges }, tree.id);
+  return { graph: merged, focusIds: [...new Set([tree.id, ...newNodes.map((n) => n.id)])] };
+}
+
 // Clear the workspace, same function, start from an empty graph
 export function buildCourseGraph(course) {
   const graph = addCourseToGraph({ nodes: [], edges: [] }, course, { x: 0, y: 0 });
