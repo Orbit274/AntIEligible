@@ -1,0 +1,171 @@
+#planner-container{
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    box-sizing: border-box;
+    padding: 20px 6% 40px;
+}
+
+#planner-header{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+#planner-title{
+    font-weight: bold;
+    font-size: 2vw;
+}
+
+#planner-toolbar{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#planner-toolbar .search{
+    width: 360px;
+    margin-top: 0;
+}
+
+#planner-toolbar input{
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 14px;
+    font-size: 15px;
+}
+
+#add-to{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#add-to select{
+    padding: 8px;
+    font-size: 15px;
+}
+
+#planner-notice{
+    margin: 0;
+    color: #a30000;
+}
+
+.planner-year{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.planner-year-header{
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.planner-year-title{
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+.remove-year{
+    border: none;
+    background: transparent;
+    color: #a30000;
+    font-size: 0.9rem;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.quarter-container{
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.quarter{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-sizing: border-box;
+    min-height: 170px;
+    padding: 10px 12px;
+    background-color: lightblue;
+    border-radius: 8px;
+    border: 1px solid black;
+}
+
+.quarter-term{
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.planned-course-container{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.planned-empty{
+    color: #4a6572;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+.planned-course{
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 26px 8px 10px;
+    text-align: center;
+    background-color: white;
+    border: 1px solid #555;
+    border-radius: 8px;
+}
+
+.planned-course span{
+    font-size: 0.85rem;
+}
+
+.planned-units{
+    color: #555;
+}
+
+.remove-course{
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    border: none;
+    background: transparent;
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.remove-course:hover{
+    color: #a30000;
+}
+
+#add-year{
+    align-self: flex-start;
+    padding: 8px 18px;
+    font-size: 1rem;
+    border: 1px solid #666;
+    border-radius: 6px;
+    background-color: white;
+    cursor: pointer;
+}
+
+#add-year:hover:not(:disabled){
+    background-color: yellow;
+}
+
+#add-year:disabled{
+    color: #888;
+    cursor: not-allowed;
+}

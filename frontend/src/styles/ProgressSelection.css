@@ -1,0 +1,28 @@
+.select-option-container{
+    color: black !important;
+    display: flex;
+    flex-direction: column;
+    background-color: #0fe7fa;
+    border: 1px solid #0fe7fa;
+    position: absolute;
+    width: 90px;
+    left: 98%;
+    top: -200%;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 1px 5px 19px -7px rgba(0, 0, 0, 0.11);
+    overflow: hidden;
+}
+
+.select-button{
+    background-color: #dcfafe;
+    height: 30px;
+    border: none;
+    cursor: pointer;
+    font-size: 10px;
+}
+.select-button:hover{
+    background-color: #87effc;
+}
