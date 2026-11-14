@@ -1,4 +1,10 @@
-import { Handle, Position, useReactFlow } from "@xyflow/react";
+import {
+  Handle,
+  Position,
+  useReactFlow,
+  useNodes,
+  useEdges,
+} from "@xyflow/react";
 import "../styles/CourseNode.css";
 // import { useCallback, useState } from "react";
 import axios from "axios";
@@ -6,7 +12,8 @@ import {
   addCourseToGraph,
   removePrereqCourseNode,
 } from "../graph/courseGraph.js";
-import { useEffect, useRef, useState } from "react";
+import { countMissingPrerequisites } from "../graph/eligibilityCheck.js";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useCourseContext } from "./CourseContext.jsx";
 import ProgressSelection from "./ProgressSelection.jsx";
 function CourseNode({ id, data }) {
@@ -21,6 +28,16 @@ function CourseNode({ id, data }) {
   } = useReactFlow();
   const { handleSideBarCourse, courseProgress, applyCourseStatusFromSidebar } =
     useCourseContext();
+
+  // Subscribe to the live graph so the eligibility count recomputes whenever
+  // any prerequisite's status changes.
+  const nodes = useNodes();
+  const edges = useEdges();
+  const missingCount = useMemo(
+    () => countMissingPrerequisites(id, { nodes, edges }),
+    [id, nodes, edges],
+  );
+
   const [showSelecteOption, setShowSelectOption] = useState(false);
   const tabRef = useRef(null);
   useEffect(() => {
@@ -116,6 +133,11 @@ function CourseNode({ id, data }) {
         <button className="branch-toggle" onClick={handleBranchToggle}>
           <img src={`/images/${branchToggleAction}-branch-arrow.png`}></img>
         </button>
+      </div>
+      <div
+        className={`node-eligibility ${missingCount === 0 ? "eligible" : "missing"}`}
+      >
+        {missingCount === 0 ? "Eligible" : `Still missing: ${missingCount}`}
       </div>
       {showSelecteOption && (
         <ProgressSelection

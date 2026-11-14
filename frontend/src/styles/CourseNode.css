@@ -1,12 +1,15 @@
 .course-node-container{
     position: relative;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     justify-content: center;
+    align-items: center;
+    gap: 3px;
     border-radius: 10px;
     border: 1px solid black;
     width: clamp(50px, 120px, 120px);
-    height: 50px;
+    min-height: 50px;
+    padding: 6px 4px;
     background-color: white;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     transform-origin: center;
@@ -67,6 +70,27 @@
 #course-id {
     text-align: center;
     font-size: clamp(12px, 1vw, 12px);
+}
+
+.node-eligibility{
+    max-width: 100%;
+    padding: 1px 6px;
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.node-eligibility.eligible{
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.node-eligibility.missing{
+    background-color: #fee2e2;
+    color: #b91c1c;
 }
 
 .delete-node{

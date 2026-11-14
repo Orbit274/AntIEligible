@@ -71,7 +71,7 @@ export function removeCourseFromGraph(graph, courseId){
     return {nodes, edges};
 }
 
-function getSourceNode(edges, courseId){
+export function getSourceNode(edges, courseId){
   const nodes = edges.map((edge) => edge.target === courseId ? edge.source : null);
   return nodes.filter((node) => node !== null);
 }
