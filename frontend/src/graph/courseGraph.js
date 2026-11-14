@@ -26,8 +26,9 @@ export function makeLogicNode(id, x, y) {
 }
 
 // A box for something that isn't a course we can open like an exam
+// Starts not satisfied; the student ticks its checkbox once they have the credit
 export function makeInfoNode(id, label, x, y, kind) {
-  return { id, type: "infoNode", position: { x, y }, data: { label, kind } };
+  return { id, type: "infoNode", position: { x, y }, data: { label, kind, satisfied: false } };
 }
 
 export function removePrereqCourseNode(graph, courseId) {
