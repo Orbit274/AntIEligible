@@ -12,10 +12,15 @@ import {
   addCourseToGraph,
   removePrereqCourseNode,
 } from "../graph/courseGraph.js";
-import { countMissingPrerequisites } from "../graph/eligibilityCheck.js";
+import {
+  countMissingPrerequisites,
+  getMissingPrerequisites,
+} from "../graph/eligibilityCheck.js";
+import { CourseStatus } from "../enums/courseStatus.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCourseContext } from "./CourseContext.jsx";
 import ProgressSelection from "./ProgressSelection.jsx";
+import ConfirmDialog from "./ConfirmDialog.jsx";
 function CourseNode({ id, data }) {
   const {
     updateNodeData,
@@ -37,8 +42,31 @@ function CourseNode({ id, data }) {
     () => countMissingPrerequisites(id, { nodes, edges }),
     [id, nodes, edges],
   );
+  const missingList = useMemo(
+    () => getMissingPrerequisites(id, { nodes, edges }),
+    [id, nodes, edges],
+  );
+
+  // A completed course shows "Completed" and an in-progress one "In-progress",
+  // both regardless of prerequisites; otherwise it is "Eligible" when nothing is
+  // missing, or the missing count.
+  let eligibilityClass, eligibilityLabel;
+  if (data.status === CourseStatus.COMPLETED) {
+    eligibilityClass = "completed";
+    eligibilityLabel = "Completed";
+  } else if (data.status === CourseStatus.IN_PROGRESS) {
+    eligibilityClass = "in-progress";
+    eligibilityLabel = "In-progress";
+  } else if (missingCount === 0) {
+    eligibilityClass = "eligible";
+    eligibilityLabel = "Eligible";
+  } else {
+    eligibilityClass = "missing";
+    eligibilityLabel = `Still missing: ${missingCount}`;
+  }
 
   const [showSelecteOption, setShowSelectOption] = useState(false);
+  const [confirmForceOpen, setConfirmForceOpen] = useState(false);
   const tabRef = useRef(null);
   useEffect(() => {
     function handleClickOutside(event) {
@@ -113,12 +141,26 @@ function CourseNode({ id, data }) {
     }
   }
 
-  function handleSelectStatusOption(status) {
-    setShowSelectOption(false);
+  function applyStatus(status) {
     updateNodeData(id, {
       status: status,
     });
     handleSideBarCourse({ id, data: { ...data, status: status } });
+  }
+
+  function handleSelectStatusOption(status) {
+    setShowSelectOption(false);
+    // Confirm only when newly completing a course that still has missing
+    // prerequisites. A course that is already completed re-confirms silently.
+    if (
+      status === CourseStatus.COMPLETED &&
+      data.status !== CourseStatus.COMPLETED &&
+      missingCount > 0
+    ) {
+      setConfirmForceOpen(true);
+      return;
+    }
+    applyStatus(status);
   }
   return (
     <div key={id} className={`course-node-container ${data.status}`}>
@@ -134,10 +176,8 @@ function CourseNode({ id, data }) {
           <img src={`/images/${branchToggleAction}-branch-arrow.png`}></img>
         </button>
       </div>
-      <div
-        className={`node-eligibility ${missingCount === 0 ? "eligible" : "missing"}`}
-      >
-        {missingCount === 0 ? "Eligible" : `Still missing: ${missingCount}`}
+      <div className={`node-eligibility ${eligibilityClass}`}>
+        {eligibilityLabel}
       </div>
       {showSelecteOption && (
         <ProgressSelection
@@ -152,6 +192,19 @@ function CourseNode({ id, data }) {
       >
         ×
       </button>
+      <ConfirmDialog
+        open={confirmForceOpen}
+        title="Prerequisites still missing"
+        message={`${data.label} still has ${missingCount} prerequisite${missingCount === 1 ? "" : "s"} missing. Mark it completed anyway?`}
+        details={missingList}
+        confirmLabel="Force complete"
+        cancelLabel="Cancel"
+        onConfirm={() => {
+          setConfirmForceOpen(false);
+          applyStatus(CourseStatus.COMPLETED);
+        }}
+        onCancel={() => setConfirmForceOpen(false)}
+      />
       <Handle type="source" position={Position.Left} />
     </div>
   );

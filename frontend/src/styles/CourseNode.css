@@ -58,6 +58,7 @@
 .branch-toggle{
     position: absolute;
     right: 0;
+    top: 40%;
     background-color: transparent;
     border: none;
     cursor: pointer;
@@ -91,6 +92,16 @@
 .node-eligibility.missing{
     background-color: #fee2e2;
     color: #b91c1c;
+}
+
+.node-eligibility.completed{
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.node-eligibility.in-progress{
+    background-color: #fef3c7;
+    color: #92400e;
 }
 
 .delete-node{
