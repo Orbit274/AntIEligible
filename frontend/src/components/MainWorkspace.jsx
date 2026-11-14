@@ -17,21 +17,22 @@ import axios from "axios";
 import ZoomControls from "./ZoomControls";
 import GraphLegend from "./GraphLegend";
 import {
-  buildFullCourseGraph,
   buildCourseGraph,
   addCourseToWorkspace,
+  addFullTreeToWorkspace,
   removeCourseFromGraph,
 } from "../graph/courseGraph";
 import LogicNode from "./LogicNode";
 import InfoNode from "./InfoNode";
 import ViewFocus from "./ViewFocus";
 import ResponsiveGraph from "./ResponsiveGraph";
+import GraphScrollbars from "./GraphScrollbars";
 import CourseContext from "./CourseContext";
 import { CourseStatus } from "../enums/courseStatus";
 
 const translateExtent = [
   [-1500, -3000],
-  [3000, 3000],
+  [6000, 3000],
 ];
 const nodeTypes = {
   courseNode: CourseNode,
@@ -46,6 +47,13 @@ async function fetchCourse(id) {
   return response.data;
 }
 
+async function fetchCourseTree(id) {
+  const response = await axios.get(
+    `/api/course-tree/${encodeURIComponent(id)}`,
+  );
+  return response.data;
+}
+
 function MainWorkspace({ courseProgress }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -54,6 +62,7 @@ function MainWorkspace({ courseProgress }) {
   const [isVisible, setIsVisible] = useState(false);
   const [status, setStatus] = useState("loading");
   const [focusRequest, setFocusRequest] = useState({ ids: [] });
+  const [showFullTree, setShowFullTree] = useState(false);
   const flowRef = useRef(null);
   const latestLoad = useRef(0);
 
@@ -154,17 +163,19 @@ function MainWorkspace({ courseProgress }) {
   // Called by the search bar, adds the course and its prerequisites to the workspace
   async function handleSearchSelect(result) {
     try {
-      const course = await fetchCourse(result.id);
+      // Full tree mode gets every prerequisite down the chain, otherwise just the first layer
+      const data = showFullTree
+        ? await fetchCourseTree(result.id)
+        : await fetchCourse(result.id);
       latestLoad.current++;
       const flow = flowRef.current;
       const current = flow
         ? { nodes: flow.getNodes(), edges: flow.getEdges() }
         : { nodes, edges };
-      // const response = await axios.get(`/api/course-tree/${encodeURIComponent(result.id)}`);
-      // const tree = response.data;
 
-      const { graph, focusIds } = addCourseToWorkspace(current, course);
-      // const graph = buildFullCourseGraph(tree);
+      const { graph, focusIds } = showFullTree
+        ? addFullTreeToWorkspace(current, data)
+        : addCourseToWorkspace(current, data);
       const appliedStatusGraph = applyCourseStatusFromSidebar(graph, {
         completedCourses: courseProgress.completed.courses,
         inprogressCourses: courseProgress.inprogress.courses,
@@ -174,7 +185,7 @@ function MainWorkspace({ courseProgress }) {
       setFocusRequest({ ids: focusIds });
       setStatus("ready");
 
-      setSelectedCourse(tree.id);
+      setSelectedCourse(data.id);
       setIsVisible(true);
     } catch (err) {
       console.error("Failed to load course:", err);
@@ -294,6 +305,12 @@ function MainWorkspace({ courseProgress }) {
           </div>
           <div id="search-bar-container">
             <SearchBar onCourseChosen={handleSearchSelect} />
+            <button
+              className="tree-toggle"
+              onClick={() => setShowFullTree((full) => !full)}
+            >
+              {showFullTree ? "Full tree" : "First layer"}
+            </button>
           </div>
           <CourseDetailsPanel
             courseId={selectedCourse}
@@ -333,6 +350,8 @@ function MainWorkspace({ courseProgress }) {
                     }}
                     onBeforeDelete={handleBeforeDelete}
                     deleteKeyCode={["Backspace", "Delete"]}
+                    panOnScroll
+                    zoomOnScroll={false}
                   >
                     <Background />
                     <Panel position="bottom-center">
@@ -353,6 +372,7 @@ function MainWorkspace({ courseProgress }) {
                       )}
                     </Panel>
                     <ViewFocus request={focusRequest} />
+                    <GraphScrollbars />
                     <ResponsiveGraph />
                   </ReactFlow>
                 </CourseContext.Provider>
