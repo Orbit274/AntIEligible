@@ -4,6 +4,11 @@
     gap: 18px;
     box-sizing: border-box;
     padding: 20px 4% 40px;
+    transition: padding-right 0.4s ease;
+}
+
+#planner-container.viewer-open {
+    padding-right: calc(max(200px, 20vw) + 8vw);
 }
 
 #planner-header{
@@ -55,9 +60,6 @@
 }
 
 .planner-year{
-    /* display: flex;
-    flex-direction: column;
-    gap: 8px; */
     background-color: white;
     border: 1px solid #c9d3e0;
     border-radius: 12px;
@@ -98,19 +100,11 @@
 .quarter-container{
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    /* gap: 14px; */
 }
 
 .quarter{
     display: flex;
     flex-direction: column;
-    /* gap: 8px;
-    box-sizing: border-box;
-    min-height: 170px;
-    padding: 10px 12px;
-    background-color: lightblue;
-    border-radius: 8px;
-    border: 1px solid black; */
     min-width: 0;
 }
 
@@ -129,7 +123,7 @@
     font-weight: bold;
 }
 
-.planned-course-container{
+.planner-course-container{
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -140,8 +134,37 @@
     background-color: #f7fafd;
 }
 
+.planner-course.selected {
+    border: 2px solid #0022f9;
+    box-shadow: 0 0 0 2px rgba(0, 34, 249, 0.2);
+}
+
+.planner-course-open {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px 26px 8px 10px;
+    border: none;
+    border-radius: inherit;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: center;
+    cursor: pointer;
+}
+
+.planner-course-open:hover {
+    background-color: #eef5fb;
+}
+
+.planner-course-open span {
+    font-size: 0.85rem;
+}
+
 .planned-empty{
-    /* color: #4a6572; */
     margin: auto;
     text-align: center;
     color: #6b7c8a;
@@ -149,7 +172,7 @@
     font-size: 0.9rem;
 }
 
-.planned-course{
+.planner-course{
     position: relative;
     display: flex;
     flex-direction: column;
@@ -162,7 +185,7 @@
     border-radius: 8px;
 }
 
-.planned-course span{
+.planner-course span{
     font-size: 0.85rem;
 }
 
@@ -202,4 +225,31 @@
 #add-year:disabled{
     color: #888;
     cursor: not-allowed;
+}
+
+.viewer-target {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: bold;
+}
+
+.viewer-target select {
+    flex: 1;
+    min-width: 0;
+    padding: 6px;
+    font-size: 0.95rem;
+}
+
+.viewer-button {
+    padding: 8px 12px;
+    font-size: 1rem;
+    border: 1px solid #333;
+    border-radius: 6px;
+    background-color: white;
+    cursor: pointer;
+}
+
+.viewer-button:hover {
+    background-color: #fff6cc;
 }

@@ -94,3 +94,20 @@ export function unitsLabel(course) {
 export function toPlannedCourse(result) {
     return {id: result.id, label: courseLabel(result), title: result.title, units: unitsLabel(result)};
 }
+
+export function targetOptions(plan) {
+    const options = [];
+    for (const [index, year] of plan.years.entries()) {
+        for (const quarter of QUARTERS) {
+            options.push({
+                value: `${year.id}:${quarter}`,
+                label: `Year ${index + 1} · ${quarter}`
+            });
+        }
+    }
+    return options;
+}
+
+export function placementLabel(placement) {
+    return `Year ${placement.yearNumber} · ${placement.quarter}`;
+}

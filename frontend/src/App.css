@@ -5,13 +5,11 @@ body{
 #app-body{
   display: flex;
   flex-direction: row;
-  min-height: 100vh; /* min-height (was height) so a tall page, like a planner with several years, can grow */
+  min-height: 100vh;
   width: 100%;
 }
 
 #main-container{
   width: 100%;
-  /* no height here: as a flex item it then stretches to the full height of #app-body, which now
-     grows with the page (a fixed "height: 100%" would stop it stretching) */
   background-color: #f5f7fb;
 }

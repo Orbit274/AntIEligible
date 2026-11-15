@@ -1,7 +1,9 @@
 import "../styles/CoursePlanner.css"
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import SearchBar from "./SearchBar";
 import PlannerYear from "./PlannerYear";
+import ViewerPlanActions from "./ViewerPlanActions";
+import CourseDetailsPanel from "./CourseDetailsPanel";
 import {
     QUARTERS, MAX_YEARS, emptyPlan, addYear, removeYear, addCourse, removeCourse, 
     findCourse, countCourses, toPlannedCourse, courseLabel}
@@ -10,27 +12,34 @@ from "../planner/plan";
 function Planner(){
     const [plan, setPlan] = useState(emptyPlan);
     const [target, setTarget] = useState("1:Fall");
-    const [notice, setNotice] = useState("");
+    const [viewed, setViewed] = useState(null);
     const [targetYearText, targetQuarter] = target.split(":");
     const targetYear = plan.years.find((year) => year.id === Number(targetYearText)) ?? plan.years[0];
+    const targetValue = `${targetYear.id}:${targetQuarter}`;
+    const placement = viewed ? findCourse(plan, viewed.id) : null;
 
-    function handleAdd(result) {
-        const existing = findCourse(plan, result.id);
-        if (existing) {
-            setNotice(`${courseLabel(result)} is already planned for Year ${existing.yearNumber} ${existing.quarter}.`);
-            return;
-        }
-        setNotice("");
-        setPlan((current) => addCourse(current, targetYear.id, targetQuarter, toPlannedCourse(result)));
+    function handleSearchPick(result) {
+        setViewed(toPlannedCourse(result));
+    }
+
+    function handleAddViewed() {
+        if (placement) return;
+        setPlan((current) =>
+            addCourse(current, targetYear.id, targetQuarter, viewed)
+        );
+    }
+
+    function handleRemoveViewed() {
+        setPlan((current) =>
+            removeCourse(current, viewed.id)
+        );
     }
 
     function handleRemoveCourse(courseId) {
-        setNotice("");
         setPlan((current) => removeCourse(current, courseId));
     }
 
     function handleAddYear() {
-        setNotice("");
         setPlan((current) => addYear(current));
     }
 
@@ -40,31 +49,18 @@ function Planner(){
         if (count > 0 && !window.confirm(`Remove this year and the ${count} class${count === 1 ? "" : "es"} in it?`)) {
             return;
         }
-        setNotice("");
         setPlan((current) => removeYear(current, yearId));
     }
 
     return(
-        <div id="planner-container">
+        <div id="planner-container" className={viewed ? "viewer-open" : ""}>
             <div id="planner-header">
                 <span id="planner-title">Planner</span>
                 <div id="planner-toolbar">
-                    <SearchBar onCourseChosen={handleAdd} />
-                    <label id="add-to">
-                        Add to
-                        <select value={`${targetYear.id}:${targetQuarter}`} onChange={(e) => setTarget(e.target.value)}>
-                            {plan.years.map((year, index) =>
-                                QUARTERS.map((quarter) => (
-                                    <option key={`${year.id}:${quarter}`} value={`${year.id}:${quarter}`}>
-                                        Year {index + 1} · {quarter}
-                                    </option>
-                                ))
-                            )}
-                        </select>
-                    </label>
+                    <SearchBar onCourseChosen={handleSearchPick}/>
                 </div>
             </div>
-            {notice && <p id="planner-notice">{notice}</p>}
+
             {plan.years.map((year, index) => (
                 <PlannerYear
                     key={year.id}
@@ -73,8 +69,11 @@ function Planner(){
                     canRemove={plan.years.length > 1}
                     onRemoveYear={handleRemoveYear}
                     onRemoveCourse={handleRemoveCourse}
+                    selectedId={viewed?.id}
+                    onOpenCourse={setViewed}
                 />
             ))}
+            
             <button
                 id="add-year"
                 onClick={handleAddYear}
@@ -83,6 +82,19 @@ function Planner(){
             >
                 + Add year
             </button>
+
+            <CourseDetailsPanel courseId={viewed ? viewed.id : null} visible={viewed !== null} onClose={() => setViewed(null)}>
+                {viewed && (
+                    <ViewerPlanActions
+                        plan={plan}
+                        placement={placement}
+                        targetValue={targetValue}
+                        onTargetChange={setTarget}
+                        onAdd={handleAddViewed}
+                        onRemove={handleRemoveViewed}
+                    />
+                )}
+            </CourseDetailsPanel>
         </div>
     );
 }

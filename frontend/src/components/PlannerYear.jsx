@@ -2,7 +2,7 @@ import PlannerQuarter from "./PlannerQuarter";
 import {QUARTERS, countCourses} from "../planner/plan";
 
 // One year of the plan, a "Year N" heading and its four quarters side by side
-function PlannerYear({year, number, canRemove, onRemoveYear, onRemoveCourse}) {
+function PlannerYear({year, number, canRemove, selectedId, onRemoveYear, onOpenCourse, onRemoveCourse}) {
     const count = countCourses(year);
     return (
         <section className="planner-year">
@@ -23,6 +23,8 @@ function PlannerYear({year, number, canRemove, onRemoveYear, onRemoveCourse}) {
                         key={term}
                         term={term}
                         courses={year.quarters[term]}
+                        selectedId={selectedId}
+                        onOpenCourse={onOpenCourse}
                         onRemoveCourse={onRemoveCourse}
                     />
                 ))}
