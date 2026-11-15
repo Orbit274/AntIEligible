@@ -5,7 +5,9 @@ import PlannerCourse from "./PlannerCourse";
 function PlannerQuarter({term, courses, onRemoveCourse}) {
     return (
         <div className="quarter">
-            <span className="quarter-term">{term}</span>
+            <div className="quarter-header">
+                <span className="quarter-term">{term}</span>
+            </div>
             <div className="planned-course-container">
                 {courses.length === 0 && <span className="planned-empty">No classes yet</span>}
                 {courses.map((course) => (
