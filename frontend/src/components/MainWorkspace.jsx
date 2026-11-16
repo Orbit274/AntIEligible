@@ -318,69 +318,71 @@ function MainWorkspace({ courseProgress }) {
             onClose={closePanel}
           />
           <div id="graph-container">
-            <GraphLegend />
-            <ReactFlowProvider>
-              <ZoomControls />
-              <div id="graph">
-                <CourseContext.Provider
-                  value={{
-                    handleSideBarCourse,
-                    courseProgress,
-                    applyCourseStatusFromSidebar,
-                  }}
-                >
-                  <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
-                    nodeTypes={nodeTypes}
-                    onNodesChange={onNodesChange}
-                    onNodeClick={handleNodeClick}
-                    onEdgesChange={onEdgesChange}
-                    translateExtent={translateExtent}
-                    proOptions={{ hideAttribution: true }}
-                    defaultEdgeOptions={{
-                      markerEnd: {
-                        type: MarkerType.ArrowClosed,
-                      },
+            <div id="graph-card">
+              <ReactFlowProvider>
+                <ZoomControls />
+                <div id="graph">
+                  <CourseContext.Provider
+                    value={{
+                      handleSideBarCourse,
+                      courseProgress,
+                      applyCourseStatusFromSidebar,
                     }}
-                    fitView
-                    key={workspaceKey}
-                    onInit={(instance) => {
-                      flowRef.current = instance;
-                    }}
-                    onBeforeDelete={handleBeforeDelete}
-                    deleteKeyCode={["Backspace", "Delete"]}
-                    panOnScroll
-                    zoomOnScroll={false}
                   >
-                    <Background />
-                    <Panel position="bottom-center">
-                      {status === "loading" && (
-                        <div className="workspace-message">Loading...</div>
-                      )}
-                      {status === "failed" && (
-                        <div className="workspace-message">
-                          Couldn't load the starting course. Is the backend
-                          running?
-                          <button onClick={reload}>Try again</button>
-                        </div>
-                      )}
-                      {status === "ready" && nodes.length === 0 && (
-                        <div className="workspace-message">
-                          Search for a class to add it to the workspace.
-                        </div>
-                      )}
-                    </Panel>
-                    <ViewFocus request={focusRequest} />
-                    <GraphScrollbars />
-                    <ResponsiveGraph />
-                  </ReactFlow>
-                </CourseContext.Provider>
-              </div>
-            </ReactFlowProvider>
-            <button className="reset-button" onClick={handleReset}>
-              Reset
-            </button>
+                    <ReactFlow
+                      nodes={nodes}
+                      edges={edges}
+                      nodeTypes={nodeTypes}
+                      onNodesChange={onNodesChange}
+                      onNodeClick={handleNodeClick}
+                      onEdgesChange={onEdgesChange}
+                      translateExtent={translateExtent}
+                      proOptions={{ hideAttribution: true }}
+                      defaultEdgeOptions={{
+                        markerEnd: {
+                          type: MarkerType.ArrowClosed,
+                        },
+                      }}
+                      fitView
+                      key={workspaceKey}
+                      onInit={(instance) => {
+                        flowRef.current = instance;
+                      }}
+                      onBeforeDelete={handleBeforeDelete}
+                      deleteKeyCode={["Backspace", "Delete"]}
+                      panOnScroll
+                      zoomOnScroll={false}
+                    >
+                      <Background />
+                      <Panel position="bottom-center">
+                        {status === "loading" && (
+                          <div className="workspace-message">Loading...</div>
+                        )}
+                        {status === "failed" && (
+                          <div className="workspace-message">
+                            Couldn't load the starting course. Is the backend
+                            running?
+                            <button onClick={reload}>Try again</button>
+                          </div>
+                        )}
+                        {status === "ready" && nodes.length === 0 && (
+                          <div className="workspace-message">
+                            Search for a class to add it to the workspace.
+                          </div>
+                        )}
+                      </Panel>
+                      <ViewFocus request={focusRequest} />
+                      <GraphScrollbars />
+                      <ResponsiveGraph />
+                    </ReactFlow>
+                  </CourseContext.Provider>
+                </div>
+              </ReactFlowProvider>
+              <button className="reset-button" onClick={handleReset}>
+                Reset
+              </button>
+            </div>
+            <GraphLegend />
           </div>
         </div>
       </div>

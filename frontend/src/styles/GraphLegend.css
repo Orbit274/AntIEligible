@@ -1,9 +1,13 @@
 #legend-container{
+    position: absolute;
+    top: 0;
+    left: 100%;
+    margin-left: 16px;
+    width: max-content;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     justify-content: start;
-    gap: 20px;
-    flex-wrap: wrap;
+    gap: 12px;
 }
 
 .legend-item{

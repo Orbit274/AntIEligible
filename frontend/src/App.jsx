@@ -22,7 +22,6 @@ export default function App() {
       setCourses: setInprogressCourses,
     },
   };
-  console.log(completedCourses);
   return (
     <>
       <div id="app-page">
