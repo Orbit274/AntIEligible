@@ -7,8 +7,9 @@ import {
   Panel,
   useEdgesState,
   ReactFlowProvider,
+  getNodesBounds,
 } from "@xyflow/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SearchBar from "./SearchBar";
 import CourseNode from "./CourseNode";
 import "@xyflow/react/dist/style.css";
@@ -30,10 +31,8 @@ import GraphScrollbars from "./GraphScrollbars";
 import CourseContext from "./CourseContext";
 import { CourseStatus } from "../enums/courseStatus";
 
-const translateExtent = [
-  [-1500, -3000],
-  [6000, 3000],
-];
+// How far past the outermost nodes you can pan, same on every side
+const PAN_PADDING = 200;
 const nodeTypes = {
   courseNode: CourseNode,
   logicNode: LogicNode,
@@ -56,6 +55,20 @@ async function fetchCourseTree(id) {
 
 function MainWorkspace({ courseProgress }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  // Panning stops a little past the nodes in every direction, GraphScrollbars reads this same box
+  const translateExtent = useMemo(() => {
+    if (nodes.length === 0) {
+      return [
+        [-PAN_PADDING, -PAN_PADDING],
+        [PAN_PADDING, PAN_PADDING],
+      ];
+    }
+    const bounds = getNodesBounds(nodes);
+    return [
+      [bounds.x - PAN_PADDING, bounds.y - PAN_PADDING],
+      [bounds.x + bounds.width + PAN_PADDING, bounds.y + bounds.height + PAN_PADDING],
+    ];
+  }, [nodes]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [workspaceKey, setWorkspaceKey] = useState(0);
   const [selectedCourse, setSelectedCourse] = useState(null);

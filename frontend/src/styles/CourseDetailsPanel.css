@@ -1,35 +1,71 @@
-#course-detail-panel{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+/* Dimmed background covering the whole page */
+#course-detail-overlay{
     position: fixed;
-    background-color: yellow;
-    right: 6vw;
-    top: 15vh;
-    padding: 10px;
-    width: clamp(200px, 20vw, 20vw);
-    height: clamp(200px, 70vh, 70vh);
-    z-index: 1;
-    box-shadow: 0px 4px 20px 0px rgba(0, 0, 0, 0.10);
-    border-radius: 8px;
-    border: 1px solid black;
-    transform: translateX(100%);
-    opacity: 0;
-    pointer-events: none;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background-color: rgba(16, 29, 53, 0.5);
+    transition: opacity 0.2s ease;
 }
 
-#course-detail-panel.show{
-    transform: translateX(0);
-    transition: transform 0.4s ease, opacity 0.4s ease;
+#course-detail-overlay.show{
     opacity: 1;
     pointer-events: auto;
 }
 
-#course-detail-panel.close{
-    transform: translateX(100%);
-    transition: transform 0.4s ease, opacity 0.4s ease;
+#course-detail-overlay.close{
     opacity: 0;
     pointer-events: none;
+}
+
+/* The card itself, the header inside runs edge to edge so there is no padding here */
+#course-detail-panel{
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: min(620px, 100%);
+    max-height: 88vh;
+    font-family: Figtree, system-ui, sans-serif;
+    background-color: #fcfbf8;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 24px 70px rgba(10, 18, 34, 0.35);
+    transition: transform 0.2s ease;
+}
+
+#course-detail-overlay.show #course-detail-panel{
+    transform: scale(1);
+}
+
+#course-detail-overlay.close #course-detail-panel{
+    transform: scale(0.96);
+}
+
+/* Round see-through button, readable on the dark header and on the light body after scrolling */
+#course-detail-close-button{
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.25);
+    color: white;
+    cursor: pointer;
+}
+
+#course-detail-close-button:hover{
+    background-color: rgba(0, 0, 0, 0.45);
 }
 
 #course-detail-actions {
@@ -39,7 +75,6 @@
     flex-shrink: 0;
     box-sizing: border-box;
     width: 100%;
-    margin-top: 8px;
-    padding-top: 10px;
-    border-top: 1px solid black;
+    padding: 16px 32px 24px;
+    border-top: 1px solid #e6e3dc;
 }
