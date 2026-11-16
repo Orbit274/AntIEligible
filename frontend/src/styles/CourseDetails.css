@@ -1,6 +1,7 @@
 #course-details-container{
     display: flex;
     flex-direction: column;
+    min-height: 0;
     overflow-y: auto;
 }
 
@@ -10,50 +11,120 @@
 }
 
 #course-details-container::-webkit-scrollbar-thumb{
-    background-color: lightsalmon;
+    background-color: #d6d3cc;
     border-radius: 10px;
 }
-#course-info > p{
-    font-size: clamp(16px, 1vw, 20px);
+
+.course-details-message{
+    padding: 40px 32px;
+    color: #6f6c66;
+    font-size: 16px;
 }
 
-#course-detail-header {
-    text-align: center;
-    font-size: clamp(10px, 2vw, 32px);
-}
-
-#course-detail-close-button{
-    align-self: self-end;
-    background-color: transparent;
-    border: none;
-    cursor: pointer;
-}
-
-#course-detail-close-button > img{
-    width: clamp(20px, 1vw, 1vw);
-}
-.label-container{
-    display: flex;
-    height: fit-content;
-    padding: 10px 0px;
-    overflow-wrap: break-word;
-    font-size: clamp(16px, 1vw, 20px);
-
-}
-
-.label-container > .label{
-    margin-right: 10px;
-    height: fit-content;
-    width: fit-content;
-    font-weight: bold;
-}
-
-.label-container > span{
+/* Flat blue banner across the top, same blue and gold as the logo */
+#course-detail-header{
     display: flex;
     align-items: center;
+    gap: 20px;
+    padding: 28px 72px 28px 32px;
+    background-color: #0b4a9a;
+    color: white;
+}
+
+#course-detail-header .course-logo{
+    flex-shrink: 0;
+    width: 76px;
+    height: 76px;
+}
+
+.course-heading{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+#course-detail-header .course-code{
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: #f5c000;
+}
+
+#course-detail-header h2{
+    margin: 0;
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.4px;
+}
+
+#course-detail-header .course-subtitle{
+    font-size: 17px;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+#course-info{
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    padding: 24px 32px 28px;
+}
+
+.course-description{
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.6;
+    color: #22201c;
+}
+
+/* Gray table, label column on the left, rows split by thin lines */
+.course-facts{
+    margin: 0;
+    border-radius: 16px;
+    background-color: #efeeea;
+    overflow: hidden;
+}
+
+.course-fact{
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 16px;
+    padding: 16px 22px;
+}
+
+.course-fact + .course-fact{
+    border-top: 1px solid #dddbd5;
+}
+
+.course-fact dt{
+    padding-top: 2px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #75726b;
+}
+
+.course-fact dd{
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #22201c;
+}
+
+.course-fact dd.course-catalog{
+    font-size: 14px;
+    color: #55524c;
 }
 
 .requirement-list{
     margin: 0;
-    padding-left: 20px;
+    padding: 0;
+    list-style: none;
+}
+
+.requirement-list li + li{
+    margin-top: 6px;
 }
