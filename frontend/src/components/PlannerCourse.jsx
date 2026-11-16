@@ -1,8 +1,13 @@
 // One class inside a quarter which has its code, title, and units, with a small × to take it out of the plan
-function PlannerCourse({course, selected, onOpen, onRemove}) {
+function PlannerCourse({course, selected, onOpen, onRemove, onCourseDragStart}) {
     return (
         <div className={selected ? "planner-course selected" : "planner-course"}>
-            <button className="planner-course-open" onClick={() => onOpen(course)}>
+            <button 
+                className="planner-course-open" 
+                onClick={() => onOpen(course)}
+                draggable={Boolean(onCourseDragStart)}
+                onDragStart={(event) => onCourseDragStart?.(event, course, "move")}
+            >
                 <strong>{course.label}</strong>
                 <span>{course.title}</span>
                 <span className="planned-units">{course.units}</span>

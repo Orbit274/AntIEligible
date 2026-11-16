@@ -53,3 +53,20 @@
   box-sizing: border-box;
   box-shadow: 1px 5px 19px -7px rgba(0, 0, 0, 0.11);
 }
+
+.search-results li[draggable="true"] {
+  cursor: grab;
+}
+
+.search-results li[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.search-results li[draggable="true"]::after {
+  content: "Drag into a quarter";
+  align-self: flex-end;
+  margin-top: 3px;
+  color: #718096;
+  font-size: 11px;
+  font-weight: 500;
+}

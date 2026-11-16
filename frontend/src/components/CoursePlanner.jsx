@@ -5,9 +5,10 @@ import PlannerYear from "./PlannerYear";
 import ViewerPlanActions from "./ViewerPlanActions";
 import CourseDetailsPanel from "./CourseDetailsPanel";
 import {
-    QUARTERS, MAX_YEARS, emptyPlan, addYear, removeYear, addCourse, removeCourse, 
-    findCourse, countCourses, toPlannedCourse, courseLabel}
+    MAX_YEARS, emptyPlan, addYear, removeYear, addCourse, removeCourse, 
+    findCourse, countCourses, toPlannedCourse, placeCourse}
 from "../planner/plan";
+import { readDraggedCourse, writeDraggedCourse } from "../planner/dragAndDrop";
 
 function Planner(){
     const [plan, setPlan] = useState(emptyPlan);
@@ -22,17 +23,38 @@ function Planner(){
         setViewed(toPlannedCourse(result));
     }
 
+    function handleCourseDragStart(event, result, effectAllowed = "copy") {
+        writeDraggedCourse(event, result, effectAllowed);
+    }
+
+    function handleCourseDrop(event, yearId, quarter) {
+        event.preventDefault();
+        const result = readDraggedCourse(event);
+        if (!result) {
+            return;
+        }
+
+        const course = typeof result.label === "string" && "units" in result ? result : toPlannedCourse(result);
+        setPlan((current) => {
+            const currentPlacement = findCourse(current, course.id);
+            if (currentPlacement?.yearId === yearId && currentPlacement?.quarter === quarter) {
+                return current;
+            }
+            return placeCourse(current, yearId, quarter, course);
+        });
+    }
+
     function handleAddViewed() {
-        if (placement) return;
+        if (placement) {
+            return;
+        }
         setPlan((current) =>
             addCourse(current, targetYear.id, targetQuarter, viewed)
         );
     }
 
     function handleRemoveViewed() {
-        setPlan((current) =>
-            removeCourse(current, viewed.id)
-        );
+        setPlan((current) => removeCourse(current, viewed.id));
     }
 
     function handleRemoveCourse(courseId) {
@@ -57,7 +79,7 @@ function Planner(){
             <div id="planner-header">
                 <span id="planner-title">Planner</span>
                 <div id="planner-toolbar">
-                    <SearchBar onCourseChosen={handleSearchPick}/>
+                    <SearchBar onCourseChosen={handleSearchPick} onCourseDragStart={handleCourseDragStart}/>
                 </div>
             </div>
 
@@ -71,6 +93,8 @@ function Planner(){
                     onRemoveCourse={handleRemoveCourse}
                     selectedId={viewed?.id}
                     onOpenCourse={setViewed}
+                    onCourseDrop={handleCourseDrop}
+                    onCourseDragStart={handleCourseDragStart}
                 />
             ))}
             

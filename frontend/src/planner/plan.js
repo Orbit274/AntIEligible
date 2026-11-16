@@ -39,6 +39,12 @@ export function removeCourse(plan, courseId) {
     };
 }
 
+// Places a course in a quarter and if it already exists somewhere it replaces that entry
+export function placeCourse(plan, yearId, quarter, course) {
+    const planWithoutCourse = removeCourse(plan, course.id);
+    return addCourse(planWithoutCourse, yearId, quarter, course);
+}
+
 // Returns the yearId, yearNumber, and quarter of the course if it exists or null if it doesnt
 export function findCourse(plan, courseId) {
     for (const [index, year] of plan.years.entries()) {

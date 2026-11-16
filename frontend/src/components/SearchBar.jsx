@@ -1,13 +1,35 @@
 import axios from "axios";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "../styles/SearchBar.css";
 
 // Search bar with dropdown of courses
 // When user clicks a class, calls onCourseChosen(course), course is object from /api/search
-export default function SearchBar({ onCourseChosen }) {
+export default function SearchBar({ onCourseChosen, onCourseDragStart }) {
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
+  const resultsRef = useRef(null);
+  const pointerDownOnResult = useRef(false);
+  const dragging = useRef(false);
+
+  // Check where cursor was released and if the cursor was being dragged, if good then close the drop down search menu
+  useEffect(() => {
+    function handleWindowPointerUp(event) {
+      if (!pointerDownOnResult.current) {
+        return;
+      }
+      if (resultsRef.current?.contains(event.target)) {
+        return;
+      }
+      pointerDownOnResult.current = false;
+      if (!dragging.current) {
+        setOpen(false);
+      }
+    }
+
+    window.addEventListener("pointerup", handleWindowPointerUp);
+    return () => window.removeEventListener("pointerup", handleWindowPointerUp);
+  }, []);
 
   // Runs when text changes, has 200ms delay
   useEffect(() => {
@@ -69,18 +91,43 @@ export default function SearchBar({ onCourseChosen }) {
         value={search}
         onChange={handleChange}
         onFocus={() => setOpen(true)}
-        onBlur={() => setOpen(false)}
+        onBlur={() => {
+          window.setTimeout(() => {
+            if (!pointerDownOnResult.current && !dragging.current) {
+              setOpen(false);
+            }
+          }, 0);
+        }}
         onKeyDown={handleKeyDown}
         autoComplete="off"
       />
 
       {open && search.trim() && (
-        <ul className="search-results">
+        <ul className="search-results" ref={resultsRef}>
           {results.length === 0 && (
             <li className="search-empty">No courses found</li>
           )}
           {results.map((course) => (
-            <li key={course.id} onMouseDown={() => choose(course)}>
+            <li 
+              key={course.id} 
+              onMouseDown={() => pointerDownOnResult.current = true}
+              draggable={Boolean(onCourseDragStart)}
+              onMouseUp={() => pointerDownOnResult.current = false}
+              onClick={() => choose(course)}
+              onDragStart={(event) => {
+                if (!onCourseDragStart) {
+                  return
+                }
+                dragging.current = true;
+                onCourseDragStart(event, course);
+              }}
+              onDragEnd={() => {
+                dragging.current = false;
+                pointerDownOnResult.current = false;
+                setOpen(false);
+              }}
+              title={onCourseDragStart ? "Click to view, or drag into a quarter to add" : undefined}
+            >
               <strong>
                 {course.department} {course.course_number}
               </strong>

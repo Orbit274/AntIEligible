@@ -253,3 +253,13 @@
 .viewer-button:hover {
     background-color: #fff6cc;
 }
+
+.quarter.drag-over {
+    outline: 2px dashed #2670c8;
+    outline-offset: -3px;
+    background-color: #edf5ff;
+}
+
+.quarter.drag-over .quarter-header {
+    background-color: #d5e8ff;
+}
