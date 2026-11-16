@@ -1,18 +1,16 @@
 import { useNodes, useReactFlow, useStore } from "@xyflow/react";
 import "../styles/GraphScrollbars.css";
 
-// Extra room around the courses so the scrollbars can go a little past the last node
-const CONTENT_PADDING = 150;
-
 // Scrollbars along the bottom and right of the graph
-// The scrollable area is every node on the workspace plus whatever is currently on screen
+// The scrollable area is the pan limit (translateExtent) plus whatever is currently on screen
 // Dragging a thumb pans the view, scrolling the graph moves the thumbs
 function GraphScrollbars() {
-  const { getNodesBounds, getViewport, setViewport } = useReactFlow();
+  const { getViewport, setViewport } = useReactFlow();
   const nodes = useNodes();
   const [x, y, zoom] = useStore((s) => s.transform);
   const width = useStore((s) => s.width);
   const height = useStore((s) => s.height);
+  const [[extentLeft, extentTop], [extentRight, extentBottom]] = useStore((s) => s.translateExtent);
 
   if (nodes.length === 0 || width === 0 || height === 0) {
     return null;
@@ -20,11 +18,10 @@ function GraphScrollbars() {
 
   // Everything below is in flow coordinates, the view is the part of the graph on screen
   const view = { x: -x / zoom, y: -y / zoom, width: width / zoom, height: height / zoom };
-  const bounds = getNodesBounds(nodes);
-  const minX = Math.min(bounds.x - CONTENT_PADDING, view.x);
-  const minY = Math.min(bounds.y - CONTENT_PADDING, view.y);
-  const maxX = Math.max(bounds.x + bounds.width + CONTENT_PADDING, view.x + view.width);
-  const maxY = Math.max(bounds.y + bounds.height + CONTENT_PADDING, view.y + view.height);
+  const minX = Math.min(extentLeft, view.x);
+  const minY = Math.min(extentTop, view.y);
+  const maxX = Math.max(extentRight, view.x + view.width);
+  const maxY = Math.max(extentBottom, view.y + view.height);
 
   // Thumb size is how much of the content is visible, its position is where the view starts
   const horizontal = {
