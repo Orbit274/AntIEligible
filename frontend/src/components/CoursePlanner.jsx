@@ -92,7 +92,12 @@ function Planner() {
             <div id="planner-header">
                 <span id="planner-title">Planner</span>
                 <div id="planner-toolbar">
-                    <SearchBar onCourseChosen={handleSearchPick} onCourseDragStart={handleCourseDragStart}/>
+                    <SearchBar 
+                      onCourseChosen={handleSearchPick} 
+                      onCourseDragStart={handleCourseDragStart}
+                      tourTarget="planner-search-input"
+                      tourContainerTarget="planner-search-area"
+                    />
                 </div>
             </div>
 

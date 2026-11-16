@@ -4,7 +4,7 @@ import "../styles/ZoomControls.css";
 function ZoomControls() {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
   return (
-    <div id="zoom-btn-container">
+    <div id="zoom-btn-container" data-tour="graph-zoom-controls">
       <button className="zoom-btn" onClick={() => zoomIn()}>
         <ZoomIn />
       </button>

@@ -4,7 +4,7 @@ import "../styles/SearchBar.css";
 
 // Search bar with dropdown of courses
 // When user clicks a class, calls onCourseChosen(course), course is object from /api/search
-export default function SearchBar({ onCourseChosen, onCourseDragStart }) {
+export default function SearchBar({ onCourseChosen, onCourseDragStart, tourTarget = "course-search-input", tourContainerTarget }) {
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
@@ -84,9 +84,10 @@ export default function SearchBar({ onCourseChosen, onCourseDragStart }) {
   }
 
   return (
-    <div className="search">
+    <div className="search" data-tour={tourContainerTarget}>
       <input
         type="text"
+        data-tour={tourTarget}
         placeholder="Search classes"
         value={search}
         onChange={handleChange}
