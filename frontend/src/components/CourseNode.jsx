@@ -6,7 +6,6 @@ import {
   useEdges,
 } from "@xyflow/react";
 import "../styles/CourseNode.css";
-// import { useCallback, useState } from "react";
 import axios from "axios";
 import {
   addCourseToGraph,
@@ -92,6 +91,7 @@ function CourseNode({ id, data }) {
     event.stopPropagation();
     deleteElements({ nodes: [{ id }] });
   }
+
   async function fetchCurrentCourseById(id) {
     try {
       const response = await axios.get(`/api/course/${encodeURIComponent(id)}`);
@@ -101,6 +101,7 @@ function CourseNode({ id, data }) {
       return null;
     }
   }
+
   async function expandToggleHandler() {
     const course = await fetchCurrentCourseById(id);
     const thisNode = getNode(id);
@@ -117,6 +118,7 @@ function CourseNode({ id, data }) {
     setEdges(appliedCourseStatusGraph.edges);
     setNodes(appliedCourseStatusGraph.nodes);
   }
+
   function collapseToggleHandler() {
     const graph = removePrereqCourseNode(
       { nodes: getNodes(), edges: getEdges() },
@@ -131,6 +133,7 @@ function CourseNode({ id, data }) {
       ),
     );
   }
+  
   function handleBranchToggle(event) {
     event.stopPropagation();
 
@@ -162,17 +165,18 @@ function CourseNode({ id, data }) {
     }
     applyStatus(status);
   }
+
   return (
-    <div key={id} className={`course-node-container ${data.status}`}>
+    <div key={id} className={`course-node-container ${data.status}`} data-tour={id === "COMPSCI161" ? "root-course-node" : undefined}>
       <Handle type="target" position={Position.Right} />
       <div className="node" ref={tabRef}>
         <div className="node-course-title-container">
           <span id="course-id">{data.label}</span>
         </div>
-        <button className="progress nodrag nopan" onClick={handleChangeStatus}>
+        <button className="progress nodrag nopan" onClick={handleChangeStatus} data-tour={id === "COMPSCI161" ? "root-progress-control" : undefined}>
           <img src={`../images/${data.status}-status.png`}></img>
         </button>
-        <button className="branch-toggle" onClick={handleBranchToggle}>
+        <button className="branch-toggle" onClick={handleBranchToggle} data-tour={id === "COMPSCI161" ? "root-expand-control" : undefined}>
           <img src={`/images/${branchToggleAction}-branch-arrow.png`}></img>
         </button>
       </div>

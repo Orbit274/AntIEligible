@@ -10,7 +10,7 @@ import "../styles/GraphLegend.css";
 function GraphLegend() {
   return (
     <>
-      <div id="legend-container">
+      <div id="legend-container" data-tour="graph-legend">
         <span className="legend-item">
           Target <MoveLeft /> Prerequisites
         </span>

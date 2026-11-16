@@ -1,7 +1,7 @@
 import "../styles/SidebarProgressTracker.css";
 function SideBarProgressTracker({ completedCourses, inprogressCourses }) {
   return (
-    <div id="sidebar-container">
+    <div id="sidebar-container" data-tour="progress-tracker">
       <span id="sidebar-title">
         Course Tracker <br />
       </span>

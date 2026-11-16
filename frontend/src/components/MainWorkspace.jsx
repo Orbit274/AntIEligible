@@ -316,8 +316,8 @@ function MainWorkspace({ courseProgress }) {
               eligibility.
             </p>
           </div>
-          <div id="search-bar-container">
-            <SearchBar onCourseChosen={handleSearchSelect} />
+          <div id="search-bar-container" data-tour="course-search-tools">
+            <SearchBar onCourseChosen={handleSearchSelect} tourTarget="course-search-input"/>
             <button
               className="tree-toggle"
               onClick={() => setShowFullTree((full) => !full)}
@@ -331,7 +331,7 @@ function MainWorkspace({ courseProgress }) {
             onClose={closePanel}
           />
           <div id="graph-container">
-            <div id="graph-card">
+            <div id="graph-card" data-tour="graph-canvas">
               <ReactFlowProvider>
                 <ZoomControls />
                 <div id="graph">
