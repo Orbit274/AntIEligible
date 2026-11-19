@@ -59,6 +59,14 @@
   margin: 3% 0;
 }
 
+/* Matches the GraphLegend.css breakpoint: stack legend above the graph. */
+@media (max-width: 1800px) {
+  #graph-container{
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
 #graph-card{
   position: relative;
     width: min(70vw, 1100px);

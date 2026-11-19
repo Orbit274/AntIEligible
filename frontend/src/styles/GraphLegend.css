@@ -10,6 +10,23 @@
     gap: 12px;
 }
 
+/* Not enough room to the right of the graph (e.g. browser zoomed in):
+   move the legend above the graph as a centered, wrapping row. */
+@media (max-width: 1800px) {
+    #legend-container{
+        position: static;
+        order: -1;
+        margin: 0 0 12px 0;
+        width: auto;
+        max-width: min(70vw, 1100px);
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        column-gap: 20px;
+        row-gap: 8px;
+    }
+}
+
 .legend-item{
     font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
     display: flex;
