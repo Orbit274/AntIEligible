@@ -167,7 +167,7 @@ function CourseNode({ id, data }) {
   }
 
   return (
-    <div key={id} className={`course-node-container ${data.status}`} data-tour={id === "COMPSCI161" ? "root-course-node" : undefined}>
+    <div key={id} className={`course-node-container ${data.status} border-${eligibilityClass}`} data-tour={id === "COMPSCI161" ? "root-course-node" : undefined}>
       <Handle type="target" position={Position.Right} />
       <div className="node" ref={tabRef}>
         <div className="node-course-title-container">

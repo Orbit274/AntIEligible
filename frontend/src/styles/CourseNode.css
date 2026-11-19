@@ -11,8 +11,25 @@
     min-height: 50px;
     padding: 6px 4px;
     background-color: white;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     transform-origin: center;
+}
+
+/* Border color by eligibility (class set in CourseNode.jsx). */
+.course-node-container.border-missing{
+    border: 2px solid #ef4444;
+}
+
+.course-node-container.border-eligible{
+    border: 2px solid #22c55e;
+}
+
+.course-node-container.border-in-progress{
+    border: 2px solid #92400e;
+}
+
+.course-node-container.border-completed{
+    border: 2px solid #1e40af;
 }
 
 .course-node-container:hover{
