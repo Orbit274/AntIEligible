@@ -1,25 +1,35 @@
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Circle,
   CircleCheck,
   Clock4,
   MoveLeft,
+  MoveUp,
 } from "lucide-react";
 import "../styles/GraphLegend.css";
-function GraphLegend() {
+import { Orientation } from "../graph/orientation";
+
+function GraphLegend({ orientation = Orientation.LEFT_TO_RIGHT }) {
+  // Icons follow the graph direction: prerequisites open to the right, or below
+  const topDown = orientation === Orientation.TOP_DOWN;
+  const TowardTarget = topDown ? MoveUp : MoveLeft;
+  const CollapseIcon = topDown ? ChevronUp : ChevronLeft;
+  const ExpandIcon = topDown ? ChevronDown : ChevronRight;
   return (
     <>
       <div id="legend-container" data-tour="graph-legend">
         <span className="legend-item">
-          Target <MoveLeft /> Prerequisites
+          Target <TowardTarget /> Prerequisites
         </span>
         <span className="legend-item">
-          <ChevronLeft />
+          <CollapseIcon />
           Collapse
         </span>
         <span className="legend-item">
-          <ChevronRight />
+          <ExpandIcon />
           Expand
         </span>
         <span className="legend-item">
