@@ -16,6 +16,7 @@ import {
   getMissingPrerequisites,
 } from "../graph/eligibilityCheck.js";
 import { CourseStatus } from "../enums/courseStatus.js";
+import { Orientation, layoutIn } from "../graph/orientation.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCourseContext } from "./CourseContext.jsx";
 import ProgressSelection from "./ProgressSelection.jsx";
@@ -30,8 +31,14 @@ function CourseNode({ id, data }) {
     getNode,
     deleteElements,
   } = useReactFlow();
-  const { handleSideBarCourse, courseProgress, applyCourseStatusFromSidebar } =
-    useCourseContext();
+  const {
+    handleSideBarCourse,
+    courseProgress,
+    applyCourseStatusFromSidebar,
+    orientation,
+    getOrientation,
+  } = useCourseContext();
+  const topDown = orientation === Orientation.TOP_DOWN;
 
   // Subscribe to the live graph so the eligibility count recomputes whenever
   // any prerequisite's status changes.
@@ -108,12 +115,20 @@ function CourseNode({ id, data }) {
 
   async function expandToggleHandler() {
     const course = await fetchCurrentCourseById(id);
-    const thisNode = getNode(id);
-    if (!course || !thisNode) return;
-    const graph = addCourseToGraph(
+    if (!course || !getNode(id)) return;
+    // Layout runs left-to-right; layoutIn converts in and out of top-down.
+    // Read the orientation after the fetch: the user may have switched while it loaded,
+    // and getNodes() already returns the graph in the new orientation.
+    const graph = layoutIn(
+      getOrientation(),
       { nodes: getNodes(), edges: getEdges() },
-      course,
-      { x: thisNode.position.x, y: thisNode.position.y },
+      (ltr) => {
+        const thisNode = ltr.nodes.find((n) => n.id === id);
+        return addCourseToGraph(ltr, course, {
+          x: thisNode.position.x,
+          y: thisNode.position.y,
+        });
+      },
     );
     const appliedCourseStatusGraph = applyCourseStatusFromSidebar(graph, {
       completedCourses: courseProgress.completed.courses,
@@ -171,8 +186,9 @@ function CourseNode({ id, data }) {
   }
 
   return (
-    <div key={id} className={`course-node-container ${data.status} border-${eligibilityClass}`} data-tour={id === "COMPSCI161" ? "root-course-node" : undefined}>
-      <Handle type="target" position={Position.Right} />
+    <div key={id} className={`course-node-container ${data.status} border-${eligibilityClass} orient-${orientation}`} data-tour={id === "COMPSCI161" ? "root-course-node" : undefined}>
+      {/* Prerequisites connect in on the side they're laid out on, the course this one feeds sits on the opposite side */}
+      <Handle type="target" position={topDown ? Position.Bottom : Position.Right} />
       <div className="node" ref={tabRef}>
         <div className="node-course-title-container">
           <span id="course-id">{data.label}</span>
@@ -213,7 +229,7 @@ function CourseNode({ id, data }) {
         }}
         onCancel={() => setConfirmForceOpen(false)}
       />
-      <Handle type="source" position={Position.Left} />
+      <Handle type="source" position={topDown ? Position.Top : Position.Left} />
     </div>
   );
 }

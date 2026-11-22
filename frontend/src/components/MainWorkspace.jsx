@@ -30,9 +30,37 @@ import ResponsiveGraph from "./ResponsiveGraph";
 import GraphScrollbars from "./GraphScrollbars";
 import CourseContext from "./CourseContext";
 import { CourseStatus } from "../enums/courseStatus";
+import {
+  Orientation,
+  convertOrientation,
+  fromLeftToRight,
+  layoutIn,
+} from "../graph/orientation";
 
 // How far past the outermost nodes you can pan, same on every side
 const PAN_PADDING = 200;
+
+// Remembers the last orientation across reloads; storage can be unavailable
+// (private mode, blocked site data), so every access is guarded
+const ORIENTATION_STORAGE_KEY = "antieligible.graphOrientation";
+
+function loadOrientation() {
+  try {
+    const saved = localStorage.getItem(ORIENTATION_STORAGE_KEY);
+    if (Object.values(Orientation).includes(saved)) return saved;
+  } catch {
+    // fall through to the default
+  }
+  return Orientation.LEFT_TO_RIGHT;
+}
+
+function saveOrientation(orientation) {
+  try {
+    localStorage.setItem(ORIENTATION_STORAGE_KEY, orientation);
+  } catch {
+    // not remembered this time, nothing else to do
+  }
+}
 const nodeTypes = {
   courseNode: CourseNode,
   logicNode: LogicNode,
@@ -76,6 +104,12 @@ function MainWorkspace({ courseProgress }) {
   const [status, setStatus] = useState("loading");
   const [focusRequest, setFocusRequest] = useState({ ids: [] });
   const [showFullTree, setShowFullTree] = useState(false);
+  const [orientation, setOrientation] = useState(loadOrientation);
+  // Always the current orientation. Async handlers read this after their fetch
+  // (the state value they captured may be stale if the user switched meanwhile),
+  // and showStartingCourse reads it so changing orientation doesn't reload the starting course
+  const orientationRef = useRef(orientation);
+  const getOrientation = useCallback(() => orientationRef.current, []);
   const flowRef = useRef(null);
   const latestLoad = useRef(0);
 
@@ -86,7 +120,10 @@ function MainWorkspace({ courseProgress }) {
   // Puts the starting course and its prerequisites on the workspace
   const showStartingCourse = useCallback(
     (course) => {
-      const graph = buildCourseGraph(course);
+      const graph = fromLeftToRight(
+        buildCourseGraph(course),
+        orientationRef.current,
+      );
       const appliedCourseStatusGraph = applyCourseStatusFromSidebar(graph, {
         completedCourses: courseProgress.completed.courses,
         inprogressCourses: courseProgress.inprogress.courses,
@@ -186,9 +223,16 @@ function MainWorkspace({ courseProgress }) {
         ? { nodes: flow.getNodes(), edges: flow.getEdges() }
         : { nodes, edges };
 
-      const { graph, focusIds } = showFullTree
-        ? addFullTreeToWorkspace(current, data)
-        : addCourseToWorkspace(current, data);
+      // Layout runs left-to-right (new trees go below), so in top-down they land to the right.
+      // Read the orientation now, not from before the fetch: `current` is drawn in it.
+      let focusIds = [];
+      const graph = layoutIn(getOrientation(), current, (ltr) => {
+        const result = showFullTree
+          ? addFullTreeToWorkspace(ltr, data)
+          : addCourseToWorkspace(ltr, data);
+        focusIds = result.focusIds;
+        return result.graph;
+      });
       const appliedStatusGraph = applyCourseStatusFromSidebar(graph, {
         completedCourses: courseProgress.completed.courses,
         inprogressCourses: courseProgress.inprogress.courses,
@@ -226,6 +270,25 @@ function MainWorkspace({ courseProgress }) {
       }
     }
     return false;
+  }
+
+  // Redraws the whole graph in the other orientation. React Flow is remounted
+  // (new key) so every handle is re-measured on its new side, and fitView on
+  // mount fits the whole rotated graph.
+  function changeOrientation(next) {
+    if (next === orientation) return;
+    const flow = flowRef.current;
+    const current = flow
+      ? { nodes: flow.getNodes(), edges: flow.getEdges() }
+      : { nodes, edges };
+    const converted = convertOrientation(current, orientation, next);
+    orientationRef.current = next;
+    setOrientation(next);
+    saveOrientation(next);
+    setNodes(converted.nodes);
+    setEdges(converted.edges);
+    setFocusRequest({ ids: [] });
+    setWorkspaceKey((key) => key + 1);
   }
 
   const completedCourses = courseProgress.completed.courses;
@@ -331,6 +394,27 @@ function MainWorkspace({ courseProgress }) {
             onClose={closePanel}
           />
           <div id="graph-container">
+            <div id="graph-column">
+            <div
+              className="orientation-toggle"
+              role="group"
+              aria-label="Graph direction"
+            >
+              {[
+                [Orientation.LEFT_TO_RIGHT, "Left to right"],
+                [Orientation.TOP_DOWN, "Top down"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={orientation === value ? "active" : ""}
+                  aria-pressed={orientation === value}
+                  onClick={() => changeOrientation(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <div id="graph-card" data-tour="graph-canvas">
               <ReactFlowProvider>
                 <ZoomControls />
@@ -340,6 +424,8 @@ function MainWorkspace({ courseProgress }) {
                       handleSideBarCourse,
                       courseProgress,
                       applyCourseStatusFromSidebar,
+                      orientation,
+                      getOrientation,
                     }}
                   >
                     <ReactFlow
@@ -395,7 +481,8 @@ function MainWorkspace({ courseProgress }) {
                 Reset
               </button>
             </div>
-            <GraphLegend />
+            </div>
+            <GraphLegend orientation={orientation} />
           </div>
         </div>
       </div>
