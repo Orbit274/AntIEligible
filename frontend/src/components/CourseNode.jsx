@@ -56,6 +56,10 @@ function CourseNode({ id, data }) {
   } else if (data.status === CourseStatus.IN_PROGRESS) {
     eligibilityClass = "in-progress";
     eligibilityLabel = "In-progress";
+  } else if (missingCount === 0 && data.unverified) {
+    // Prerequisites couldn't be read from the catalogue text, so "Eligible" can't be trusted
+    eligibilityClass = "unverified";
+    eligibilityLabel = "Unverified";
   } else if (missingCount === 0) {
     eligibilityClass = "eligible";
     eligibilityLabel = "Eligible";

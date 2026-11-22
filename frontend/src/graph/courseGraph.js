@@ -199,7 +199,10 @@ export function addCourseToGraph(graph, course, origin = { x: 0, y: 0 }) {
   //First node will initially expand 
   const expandedIndex = nodes.findIndex((n) => n.id === course.id);
   if (expandedIndex !== -1) {
-    nodes[expandedIndex] = { ...nodes[expandedIndex], data: { ...nodes[expandedIndex].data, isExpanded: true } };
+    nodes[expandedIndex] = {
+      ...nodes[expandedIndex],
+      data: { ...nodes[expandedIndex].data, isExpanded: true, unverified: course.prerequisite_source === "unparsed" },
+    };
   }
   return { nodes, edges };
 }
@@ -237,7 +240,13 @@ export function buildFullCourseGraph(tree) {
   const addLeaf = (leaf) =>
     addKind(leaf.id, leaf.type === "exam" ? { type: "exam", label: leaf.label } : { type: "course", label: leaf.label });
 
-  tree.courses.forEach((c) => addKind(c.id, { type: "course", label: `${c.department} ${c.course_number}` }));
+  tree.courses.forEach((c) =>
+    addKind(c.id, {
+      type: "course",
+      label: `${c.department} ${c.course_number}`,
+      unverified: c.prerequisite_source === "unparsed",
+    }),
+  );
 
   tree.courses.forEach((c) => {
     const parsed = parsePrereqTree(c.prerequisite_tree);
@@ -304,6 +313,7 @@ export function buildFullCourseGraph(tree) {
       } else {
         const node = makeNode(id, kind.label, x, y);
         node.data.isExpanded = hasPrereqs.has(id);
+        node.data.unverified = kind.unverified ?? false;
         nodes.push(node);
       }
     });

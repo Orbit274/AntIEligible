@@ -119,6 +119,15 @@
     color: #55524c;
 }
 
+/* Small gray line under a prerequisite that wasn't read from AnteaterAPI's data */
+.course-data-note{
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    font-style: italic;
+    color: #75726b;
+}
+
 .requirement-list{
     margin: 0;
     padding: 0;

@@ -24,6 +24,10 @@
     border: 2px solid #3b82f6;
 }
 
+.course-node-container.border-unverified{
+    border: 2px dashed #9ca3af;
+}
+
 .course-node-container.border-in-progress{
     border: 2px solid #92400e;
 }
@@ -114,6 +118,11 @@
 .node-eligibility.completed{
     background-color: #dbeafe;
     color: #1e40af;
+}
+
+.node-eligibility.unverified{
+    background-color: #f3f4f6;
+    color: #4b5563;
 }
 
 .node-eligibility.in-progress{
