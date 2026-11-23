@@ -24,6 +24,10 @@
     border: 2px solid #3b82f6;
 }
 
+.course-node-container.border-unverified{
+    border: 2px dashed #9ca3af;
+}
+
 .course-node-container.border-in-progress{
     border: 2px solid #92400e;
 }
@@ -85,6 +89,23 @@
     display: block;
     width: 10px;
 }
+
+/* Top-down: prerequisites open below, so the arrow sits just inside the bottom
+   edge, in the free space under the eligibility label (node keeps the same size
+   as left-to-right). The images are turned 90deg clockwise (expand > points
+   down, collapse < points up). */
+.orient-top-down .branch-toggle{
+    top: auto;
+    right: auto;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0 6px;
+}
+
+.orient-top-down .branch-toggle > img{
+    transform: rotate(90deg);
+}
 #course-id {
     text-align: center;
     font-size: clamp(12px, 1vw, 12px);
@@ -114,6 +135,11 @@
 .node-eligibility.completed{
     background-color: #dbeafe;
     color: #1e40af;
+}
+
+.node-eligibility.unverified{
+    background-color: #f3f4f6;
+    color: #4b5563;
 }
 
 .node-eligibility.in-progress{

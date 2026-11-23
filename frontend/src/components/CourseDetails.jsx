@@ -23,9 +23,12 @@ function CourseDetails({courseId}){
 
         if (error) return <div className="course-details-message">{error}</div>;
         if (!course) return <div className="course-details-message">Loading course details...</div>;
-        const prereqCourses = loadPrerequisites(course.prerequisites)
         const parsed = parsePrereqTree(course.prerequisite_tree);
         const requirements = parsed ? describeRequirements(parsed) : null;
+        // The backend couldn't turn the catalogue text into a tree, or the tree is too complex to list, show the text itself
+        const showTextOnly = Boolean(course.prerequisite_text)
+            && (course.prerequisite_source === "unparsed" || requirements === null);
+        const recommendedOnly = course.prerequisite_source === "recommended";
     return (
         <div id="course-details-container">
             <header id="course-detail-header">
@@ -47,15 +50,31 @@ function CourseDetails({courseId}){
                     <div className="course-fact">
                         <dt>Prereqs</dt>
                         <dd>
-                            {requirements === null && prereqCourses}
-                            {requirements !== null && requirements.required.length === 0 && "None"}
-                            {requirements !== null && requirements.required.length > 0 && (
+                            {showTextOnly && (
+                                <>
+                                    {course.prerequisite_text}
+                                    <span className="course-data-note">
+                                        Not checked automatically, confirm in the UCI catalogue
+                                    </span>
+                                </>
+                            )}
+                            {!showTextOnly && !requirements?.required.length && "None"}
+                            {!showTextOnly && requirements?.required.length > 0 && (
                                 <ul className="requirement-list">
                                     {requirements.required.map((line) => <li key={line}>{line}</li>)}
                                 </ul>
                             )}
+                            {!showTextOnly && course.prerequisite_source === "parsed" && (
+                                <span className="course-data-note">Read from the catalogue text</span>
+                            )}
                         </dd>
                     </div>
+                    {recommendedOnly && (
+                        <div className="course-fact">
+                            <dt>Recommended</dt>
+                            <dd>{course.prerequisite_text.replace(/^recommended:?\s*/i, "")}</dd>
+                        </div>
+                    )}
                     {requirements !== null && requirements.excluded.length > 0 && (
                         <div className="course-fact">
                             <dt>Not open to</dt>
@@ -70,7 +89,7 @@ function CourseDetails({courseId}){
                         <dt>Department</dt>
                         <dd>{course.department_name} ({course.department})</dd>
                     </div>
-                    {course.prerequisite_text && (
+                    {course.prerequisite_text && !showTextOnly && !recommendedOnly && (
                         <div className="course-fact">
                             <dt>Catalog</dt>
                             <dd className="course-catalog">{course.prerequisite_text}</dd>
@@ -80,10 +99,6 @@ function CourseDetails({courseId}){
             </div>
         </div>
     );
-}
-
-function loadPrerequisites(prereqs) {
-    return prereqs.map((prereq) => "\"" + prereq.id + "\" ");
 }
 
 // 4 -> "4 units", 1 and 4 -> "1-4 units"

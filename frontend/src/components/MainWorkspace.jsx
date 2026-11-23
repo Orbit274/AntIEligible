@@ -31,9 +31,22 @@ import GraphScrollbars from "./GraphScrollbars";
 import CourseContext from "./CourseContext";
 import { CourseStatus } from "../enums/courseStatus";
 import { useTutorialActions } from "./TutorialActionContext";
+import {
+  Orientation,
+  convertOrientation,
+  fromLeftToRight,
+  layoutIn,
+} from "../graph/orientation";
+import {
+  loadOrientation,
+  loadSavedGraph,
+  saveGraph,
+  saveOrientation,
+} from "../storage/graphStorage";
 
 // How far past the outermost nodes you can pan, same on every side
 const PAN_PADDING = 200;
+
 const nodeTypes = {
   courseNode: CourseNode,
   logicNode: LogicNode,
@@ -55,7 +68,21 @@ async function fetchCourseTree(id) {
 }
 
 function MainWorkspace({ courseProgress }) {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  // The graph saved in the last visit with the sidebar's statuses applied, null when there is none.
+  // Its positions are in the saved orientation, which loadOrientation restores alongside it.
+  const [restoredGraph] = useState(() => {
+    const savedGraph = loadSavedGraph();
+    return (
+      savedGraph &&
+      applyCourseStatusFromSidebar(savedGraph, {
+        completedCourses: courseProgress.completed.courses,
+        inprogressCourses: courseProgress.inprogress.courses,
+      })
+    );
+  });
+  const [nodes, setNodes, onNodesChange] = useNodesState(
+    restoredGraph?.nodes ?? [],
+  );
   // Panning stops a little past the nodes in every direction, GraphScrollbars reads this same box
   const translateExtent = useMemo(() => {
     if (nodes.length === 0) {
@@ -70,13 +97,21 @@ function MainWorkspace({ courseProgress }) {
       [bounds.x + bounds.width + PAN_PADDING, bounds.y + bounds.height + PAN_PADDING],
     ];
   }, [nodes]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(
+    restoredGraph?.edges ?? [],
+  );
   const [workspaceKey, setWorkspaceKey] = useState(0);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [status, setStatus] = useState("loading");
+  const [status, setStatus] = useState(restoredGraph ? "ready" : "loading");
   const [focusRequest, setFocusRequest] = useState({ ids: [] });
   const [showFullTree, setShowFullTree] = useState(false);
+  const [orientation, setOrientation] = useState(loadOrientation);
+  // Always the current orientation. Async handlers read this after their fetch
+  // (the state value they captured may be stale if the user switched meanwhile),
+  // and showStartingCourse reads it so changing orientation doesn't reload the starting course
+  const orientationRef = useRef(orientation);
+  const getOrientation = useCallback(() => orientationRef.current, []);
   const flowRef = useRef(null);
   const graphNodeDragStart = useRef(null);
   const latestLoad = useRef(0);
@@ -94,7 +129,10 @@ function MainWorkspace({ courseProgress }) {
   // Puts the starting course and its prerequisites on the workspace
   const showStartingCourse = useCallback(
     (course) => {
-      const graph = buildCourseGraph(course);
+      const graph = fromLeftToRight(
+        buildCourseGraph(course),
+        orientationRef.current,
+      );
       const appliedCourseStatusGraph = applyCourseStatusFromSidebar(graph, {
         completedCourses: courseProgress.completed.courses,
         inprogressCourses: courseProgress.inprogress.courses,
@@ -141,8 +179,9 @@ function MainWorkspace({ courseProgress }) {
     }
   }
 
-  // Show the starting course
+  // Show the starting course, unless a saved graph was restored
   useEffect(() => {
+    if (restoredGraph) return;
     const thisLoad = ++latestLoad.current;
     fetchCourse(STARTING_COURSE_ID)
       .then((course) => {
@@ -153,7 +192,16 @@ function MainWorkspace({ courseProgress }) {
         console.error("Failed to load the starting course:", err);
         setStatus("failed");
       });
-  }, [showStartingCourse]);
+  }, [restoredGraph, showStartingCourse]);
+
+  // Save the graph after every change so it survives a page refresh.
+  // Skipped until the graph is ready, so the empty first render never overwrites the saved one,
+  // and while a node is being dragged, so it is written once on drop instead of every frame.
+  useEffect(() => {
+    const isDragging = nodes.some((node) => node.dragging);
+    if (status !== "ready" || isDragging) return;
+    saveGraph({ nodes, edges });
+  }, [nodes, edges, status]);
 
   // Used by Reset and "Try again", show "Loading..." and load the starting course again
   function reload() {
@@ -194,9 +242,16 @@ function MainWorkspace({ courseProgress }) {
         ? { nodes: flow.getNodes(), edges: flow.getEdges() }
         : { nodes, edges };
 
-      const { graph, focusIds } = showFullTree
-        ? addFullTreeToWorkspace(current, data)
-        : addCourseToWorkspace(current, data);
+      // Layout runs left-to-right (new trees go below), so in top-down they land to the right.
+      // Read the orientation now, not from before the fetch: `current` is drawn in it.
+      let focusIds = [];
+      const graph = layoutIn(getOrientation(), current, (ltr) => {
+        const result = showFullTree
+          ? addFullTreeToWorkspace(ltr, data)
+          : addCourseToWorkspace(ltr, data);
+        focusIds = result.focusIds;
+        return result.graph;
+      });
       const appliedStatusGraph = applyCourseStatusFromSidebar(graph, {
         completedCourses: courseProgress.completed.courses,
         inprogressCourses: courseProgress.inprogress.courses,
@@ -235,6 +290,25 @@ function MainWorkspace({ courseProgress }) {
       }
     }
     return false;
+  }
+
+  // Redraws the whole graph in the other orientation. React Flow is remounted
+  // (new key) so every handle is re-measured on its new side, and fitView on
+  // mount fits the whole rotated graph.
+  function changeOrientation(next) {
+    if (next === orientation) return;
+    const flow = flowRef.current;
+    const current = flow
+      ? { nodes: flow.getNodes(), edges: flow.getEdges() }
+      : { nodes, edges };
+    const converted = convertOrientation(current, orientation, next);
+    orientationRef.current = next;
+    setOrientation(next);
+    saveOrientation(next);
+    setNodes(converted.nodes);
+    setEdges(converted.edges);
+    setFocusRequest({ ids: [] });
+    setWorkspaceKey((key) => key + 1);
   }
 
   const completedCourses = courseProgress.completed.courses;
@@ -340,6 +414,27 @@ function MainWorkspace({ courseProgress }) {
             onClose={closePanel}
           />
           <div id="graph-container">
+            <div id="graph-column">
+            <div
+              className="orientation-toggle"
+              role="group"
+              aria-label="Graph direction"
+            >
+              {[
+                [Orientation.LEFT_TO_RIGHT, "Left to right"],
+                [Orientation.TOP_DOWN, "Top down"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={orientation === value ? "active" : ""}
+                  aria-pressed={orientation === value}
+                  onClick={() => changeOrientation(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <div id="graph-card" data-tour="graph-canvas">
               <ReactFlowProvider>
                 <ZoomControls />
@@ -349,6 +444,8 @@ function MainWorkspace({ courseProgress }) {
                       handleSideBarCourse,
                       courseProgress,
                       applyCourseStatusFromSidebar,
+                      orientation,
+                      getOrientation,
                     }}
                   >
                     <ReactFlow
@@ -429,7 +526,8 @@ function MainWorkspace({ courseProgress }) {
                 Reset
               </button>
             </div>
-            <GraphLegend />
+            </div>
+            <GraphLegend orientation={orientation} />
           </div>
         </div>
       </div>
