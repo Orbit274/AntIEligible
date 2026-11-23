@@ -8,6 +8,11 @@ import SideBarProgressTracker from "./components/SidebarProgressTracker";
 import { useState, useCallback, useEffect } from "react";
 import TutorialGuide from "./components/TutorialGuide";
 import TipsPanel from "./components/TipsPanel";
+import usePersistentMap from "./hooks/usePersistentMap";
+
+// Bump the version when the saved shape changes, so old data is ignored
+const COMPLETED_COURSES_KEY = "antieligible.completedCourses.v1";
+const INPROGRESS_COURSES_KEY = "antieligible.inprogressCourses.v1";
 
 const TUTORIAL_SEEN_KEY = "antieligible-tutorial-seen";
 
@@ -81,8 +86,12 @@ function AppContent({ courseProgress, completedCourses, inprogressCourses }) {
 }
 
 export default function App() {
-  const [completedCourses, setCompletedCourses] = useState(new Map());
-  const [inprogressCourses, setInprogressCourses] = useState(new Map());
+  const [completedCourses, setCompletedCourses] = usePersistentMap(
+    COMPLETED_COURSES_KEY,
+  );
+  const [inprogressCourses, setInprogressCourses] = usePersistentMap(
+    INPROGRESS_COURSES_KEY,
+  );
 
   const courseProgress = {
     completed: {
