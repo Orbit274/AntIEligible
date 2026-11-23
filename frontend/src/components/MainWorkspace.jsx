@@ -30,6 +30,7 @@ import ResponsiveGraph from "./ResponsiveGraph";
 import GraphScrollbars from "./GraphScrollbars";
 import CourseContext from "./CourseContext";
 import { CourseStatus } from "../enums/courseStatus";
+import { useTutorialActions } from "./TutorialActionContext";
 
 // How far past the outermost nodes you can pan, same on every side
 const PAN_PADDING = 200;
@@ -77,10 +78,17 @@ function MainWorkspace({ courseProgress }) {
   const [focusRequest, setFocusRequest] = useState({ ids: [] });
   const [showFullTree, setShowFullTree] = useState(false);
   const flowRef = useRef(null);
+  const graphNodeDragStart = useRef(null);
   const latestLoad = useRef(0);
+  const { reportTutorialAction } = useTutorialActions();
 
   function closePanel() {
+    if (!isVisible) return;
+
     setIsVisible(false);
+    if (selectedCourse) {
+      reportTutorialAction("course-details-closed", { courseId: selectedCourse });
+    }
   }
 
   // Puts the starting course and its prerequisites on the workspace
@@ -200,6 +208,7 @@ function MainWorkspace({ courseProgress }) {
 
       setSelectedCourse(data.id);
       setIsVisible(true);
+      reportTutorialAction("graph-course-selected", { courseId: data.id });
     } catch (err) {
       console.error("Failed to load course:", err);
     }
@@ -317,7 +326,7 @@ function MainWorkspace({ courseProgress }) {
             </p>
           </div>
           <div id="search-bar-container" data-tour="course-search-tools">
-            <SearchBar onCourseChosen={handleSearchSelect} tourTarget="course-search-input"/>
+            <SearchBar onCourseChosen={handleSearchSelect} tourTarget="course-search-input" tourResultTarget="course-search-result" tourContext="graph"/>
             <button
               className="tree-toggle"
               onClick={() => setShowFullTree((full) => !full)}
@@ -348,6 +357,31 @@ function MainWorkspace({ courseProgress }) {
                       nodeTypes={nodeTypes}
                       onNodesChange={onNodesChange}
                       onNodeClick={handleNodeClick}
+                      onNodeDragStart={(_, node) => {
+                        if (node.type === "courseNode") {
+                          graphNodeDragStart.current = {
+                            id: node.id,
+                            x: node.position.x,
+                            y: node.position.y,
+                          };
+                        }
+                      }}
+                      onNodeDragStop={(_, node) => {
+                        const start = graphNodeDragStart.current;
+                        graphNodeDragStart.current = null;
+                        if (
+                          node.type === "courseNode" &&
+                          start?.id === node.id &&
+                          (Math.abs(start.x - node.position.x) > 1 || Math.abs(start.y - node.position.y) > 1)
+                        ) {
+                          reportTutorialAction("graph-course-node-moved", { courseId: node.id });
+                        }
+                      }}
+                      onMoveEnd={(event) => {
+                        if (event) {
+                          reportTutorialAction("graph-canvas-panned");
+                        }
+                      }}
                       onEdgesChange={onEdgesChange}
                       translateExtent={translateExtent}
                       proOptions={{ hideAttribution: true }}

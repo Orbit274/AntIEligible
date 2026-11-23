@@ -1,16 +1,18 @@
 import axios from "axios";
 import { useState, useEffect, useRef } from "react";
+import { useTutorialActions } from "./TutorialActionContext";
 import "../styles/SearchBar.css";
 
 // Search bar with dropdown of courses
 // When user clicks a class, calls onCourseChosen(course), course is object from /api/search
-export default function SearchBar({ onCourseChosen, onCourseDragStart, tourTarget = "course-search-input", tourContainerTarget }) {
+export default function SearchBar({ onCourseChosen, onCourseDragStart, tourTarget = "course-search-input", tourContainerTarget, tourResultTarget, tourContext = "graph" }) {
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
   const resultsRef = useRef(null);
   const pointerDownOnResult = useRef(false);
   const dragging = useRef(false);
+  const { reportTutorialAction } = useTutorialActions();
 
   // Check where cursor was released and if the cursor was being dragged, if good then close the drop down search menu
   useEffect(() => {
@@ -47,6 +49,11 @@ export default function SearchBar({ onCourseChosen, onCourseDragStart, tourTarge
         });
         setResults(response.data);
         setOpen(true);
+        reportTutorialAction("search-results-loaded", {
+          context: tourContext,
+          normalizedQuery: normalizeCourseQuery(q),
+          courseIds: response.data.map((course) => course.id),
+        });
       } catch (e) {
         if (!axios.isCancel(e)) {
           console.error("Search failed: ", e);
@@ -58,11 +65,15 @@ export default function SearchBar({ onCourseChosen, onCourseDragStart, tourTarge
       clearTimeout(timer);
       controller.abort();
     };
-  }, [search]);
+  }, [search, reportTutorialAction, tourContext]);
 
   async function handleChange(event) {
     const text = event.target.value;
     setSearch(text);
+    reportTutorialAction("search-query-entered", {
+      context: tourContext,
+      normalizedQuery: normalizeCourseQuery(text),
+    });
 
     if (text.trim() === "") {
       setResults([]);
@@ -92,9 +103,13 @@ export default function SearchBar({ onCourseChosen, onCourseDragStart, tourTarge
         value={search}
         onChange={handleChange}
         onFocus={() => setOpen(true)}
-        onBlur={() => {
+        onBlur={(event) => {
+          const focusMovingIntoTutorial = event.relatedTarget?.closest?.(".tutorial-card");
           window.setTimeout(() => {
-            if (!pointerDownOnResult.current && !dragging.current) {
+            const tutorialHasFocus =
+              tourContext === "planner" &&
+              (focusMovingIntoTutorial || document.activeElement?.closest?.(".tutorial-card"));
+            if (!pointerDownOnResult.current && !dragging.current && !tutorialHasFocus) {
               setOpen(false);
             }
           }, 0);
@@ -110,7 +125,8 @@ export default function SearchBar({ onCourseChosen, onCourseDragStart, tourTarge
           )}
           {results.map((course) => (
             <li 
-              key={course.id} 
+              key={course.id}
+              data-tour={tourResultTarget}
               onMouseDown={() => pointerDownOnResult.current = true}
               draggable={Boolean(onCourseDragStart)}
               onMouseUp={() => pointerDownOnResult.current = false}
@@ -139,4 +155,8 @@ export default function SearchBar({ onCourseChosen, onCourseDragStart, tourTarge
       )}
     </div>
   );
+}
+
+function normalizeCourseQuery(value) {
+  return String(value ?? "").replace(/[^a-z0-9]/gi, "").toUpperCase();
 }

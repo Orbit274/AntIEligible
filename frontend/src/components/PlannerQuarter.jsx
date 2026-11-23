@@ -49,7 +49,7 @@ function PlannerQuarter({yearId, term, courses, selectedId, onOpenCourse, onRemo
             onDragEnter={handleDragEnter}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            data-tour={yearId === 1 && term === "Fall" ? "planner-drop-target" : undefined}
+            data-tour={yearId === 1 && term === "Fall" ? "planner-drop-target" : yearId === 1 && term === "Winter" ? "planner-move-target" : undefined}
         >
             <div className="quarter-header">
                 <span className="quarter-term">{term}</span>

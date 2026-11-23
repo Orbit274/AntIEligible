@@ -19,6 +19,7 @@ import { CourseStatus } from "../enums/courseStatus.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCourseContext } from "./CourseContext.jsx";
 import ProgressSelection from "./ProgressSelection.jsx";
+import { useTutorialActions } from "./TutorialActionContext.jsx";
 import ConfirmDialog from "./ConfirmDialog.jsx";
 function CourseNode({ id, data }) {
   const {
@@ -32,6 +33,7 @@ function CourseNode({ id, data }) {
   } = useReactFlow();
   const { handleSideBarCourse, courseProgress, applyCourseStatusFromSidebar } =
     useCourseContext();
+  const { reportTutorialAction } = useTutorialActions();
 
   // Subscribe to the live graph so the eligibility count recomputes whenever
   // any prerequisite's status changes.
@@ -84,7 +86,11 @@ function CourseNode({ id, data }) {
   const branchToggleAction = data.isExpanded ? "collapse" : "expand";
   function handleChangeStatus(event) {
     event.stopPropagation();
+    const opening = !showSelecteOption;
     setShowSelectOption(!showSelecteOption);
+    if (opening) {
+      reportTutorialAction("course-status-menu-opened", { courseId: id });
+    }
   }
 
   function handleDelete(event) {
@@ -117,6 +123,7 @@ function CourseNode({ id, data }) {
     });
     setEdges(appliedCourseStatusGraph.edges);
     setNodes(appliedCourseStatusGraph.nodes);
+    return true;
   }
 
   function collapseToggleHandler() {
@@ -134,13 +141,17 @@ function CourseNode({ id, data }) {
     );
   }
   
-  function handleBranchToggle(event) {
+  async function handleBranchToggle(event) {
     event.stopPropagation();
 
     if (data.isExpanded) {
       collapseToggleHandler();
+      reportTutorialAction("course-branch-collapsed", { courseId: id });
     } else {
-      expandToggleHandler();
+      const expanded = await expandToggleHandler();
+      if (expanded) {
+        reportTutorialAction("course-branch-expanded", { courseId: id });
+      }
     }
   }
 
@@ -149,6 +160,7 @@ function CourseNode({ id, data }) {
       status: status,
     });
     handleSideBarCourse({ id, data: { ...data, status: status } });
+    reportTutorialAction("course-status-updated", { courseId: id, status });
   }
 
   function handleSelectStatusOption(status) {
@@ -167,9 +179,9 @@ function CourseNode({ id, data }) {
   }
 
   return (
-    <div key={id} className={`course-node-container ${data.status} border-${eligibilityClass}`} data-tour={id === "COMPSCI161" ? "root-course-node" : undefined}>
+    <div key={id} ref={tabRef} className={`course-node-container ${data.status}`} data-tour={id === "COMPSCI161" ? "root-course-node" : undefined}>
       <Handle type="target" position={Position.Right} />
-      <div className="node" ref={tabRef}>
+      <div className="node">
         <div className="node-course-title-container">
           <span id="course-id">{data.label}</span>
         </div>
