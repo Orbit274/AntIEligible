@@ -1,16 +1,55 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { TUTORIAL_STEPS } from "../tutorialSteps";
+import { useTutorialActions } from "./TutorialActionContext";
 import "../styles/TutorialGuide.css";
 
 const SPOTLIGHT_PADDING = 9;
 const VIEWPORT_MARGIN = 16;
 const PANEL_GAP = 14;
+const EMPTY_TASK_ACTIONS = Object.freeze([]);
 
-function getPanelPosition(targetRect, panelSize, viewport, placement) {
+function sameRectList(previous, next) {
+    if (previous.length !== next.length) return false;
+    return previous.every((rect, index) => {
+        const candidate = next[index];
+        return candidate &&
+            Math.abs(rect.left - candidate.left) < 0.5 &&
+            Math.abs(rect.top - candidate.top) < 0.5 &&
+            Math.abs(rect.width - candidate.width) < 0.5 &&
+            Math.abs(rect.height - candidate.height) < 0.5;
+    });
+}
+
+function getPanelPosition(targetRect, panelSize, viewport, placement, panelLocation) {
     const { width: viewportWidth, height: viewportHeight } = viewport;
     const panelWidth = Math.min(panelSize.width || 360, viewportWidth - VIEWPORT_MARGIN * 2);
     const panelHeight = panelSize.height || 230;
+
+    // A fixed viewport position is useful for steps where the floating panel
+    // must stay clear of an interactive area (for example, the graph or a menu).
+    // panelLocation accepts top/bottom and left/right offsets in pixels.
+    if (panelLocation) {
+        const requestedLeft = Number.isFinite(panelLocation.left)
+            ? panelLocation.left
+            : Number.isFinite(panelLocation.right)
+                ? viewportWidth - panelLocation.right - panelWidth
+                : (viewportWidth - panelWidth) / 2;
+        const requestedTop = Number.isFinite(panelLocation.top)
+            ? panelLocation.top
+            : Number.isFinite(panelLocation.bottom)
+                ? viewportHeight - panelLocation.bottom - panelHeight
+                : (viewportHeight - panelHeight) / 2;
+
+        const maxLeft = Math.max(VIEWPORT_MARGIN, viewportWidth - panelWidth - VIEWPORT_MARGIN);
+        const maxTop = Math.max(VIEWPORT_MARGIN, viewportHeight - panelHeight - VIEWPORT_MARGIN);
+
+        return {
+            left: Math.max(VIEWPORT_MARGIN, Math.min(requestedLeft, maxLeft)),
+            top: Math.max(VIEWPORT_MARGIN, Math.min(requestedTop, maxTop)),
+        };
+    }
+
     if (!targetRect) {
         return {
             left: Math.max(VIEWPORT_MARGIN, (viewportWidth - panelWidth) / 2),
@@ -66,15 +105,32 @@ function getPanelPosition(targetRect, panelSize, viewport, placement) {
     };
 }
 
+function matchesTaskAction(requirement, actionName, payload = {}) {
+    if (requirement.event !== actionName) {
+        return false;
+    }
+    return Object.entries(requirement.match ?? {}).every(([key, expected]) => {
+        if (key === "includesCourseId") {
+            return Array.isArray(payload.courseIds) && payload.courseIds.includes(expected);
+        }
+        return payload[key] === expected;
+    });
+}
+
 export default function TutorialGuide({ open, onClose }) {
     const [stepIndex, setStepIndex] = useState(0);
     const [targetRects, setTargetRects] = useState([]);
     const [viewport, setViewport] = useState({ width: window.innerWidth, height: window.innerHeight});
     const [panelPosition, setPanelPosition] = useState(null);
+    const [completedTaskActionIds, setCompletedTaskActionIds] = useState([]);
+    const [isDragging, setIsDragging] = useState(false);
     const panelRef = useRef(null);
     const location = useLocation();
     const navigate = useNavigate();
+    const { subscribeTutorialActions } = useTutorialActions();
     const step = TUTORIAL_STEPS[stepIndex];
+    const taskActions = step.task?.actions ?? EMPTY_TASK_ACTIONS;
+    const taskComplete = taskActions.every((action) => completedTaskActionIds.includes(action.id));
     const isFirstStep = stepIndex === 0;
     const isLastStep = stepIndex === TUTORIAL_STEPS.length - 1;
     const panelStyle = useMemo(() => panelPosition ? { left: `${panelPosition.left}px`, top: `${panelPosition.top}px` } : undefined, [panelPosition]);
@@ -85,12 +141,58 @@ export default function TutorialGuide({ open, onClose }) {
         }
     }, [open]);
 
+    // Reset each exercise when entering its step, then listen for actions, reported by the SearchBar, graph, course viewer, and Planner
+    useEffect(() => {
+        if (!open || taskActions.length === 0) {
+            return undefined;
+        }
+
+        return subscribeTutorialActions((actionName, payload) => {
+            setCompletedTaskActionIds((current) => {
+                const nextRequirement = taskActions.find(
+                    (requirement) => !current.includes(requirement.id),
+                );
+                if (!nextRequirement || !matchesTaskAction(nextRequirement, actionName, payload)) {
+                    return current;
+                }
+                return [...current, nextRequirement.id];
+            });
+        });
+    }, [open, stepIndex, taskActions, subscribeTutorialActions]);
+
+    // Temporarily let native drag events pass through the dimmer so a drag can travel from a highlighted source to a separate highlighted drop target
+    useEffect(() => {
+        if (!open) {
+            return undefined;
+        }
+        const handleDragStart = () => setIsDragging(true);
+        const handleDragEnd = () => setIsDragging(false);
+        document.addEventListener("dragstart", handleDragStart, true);
+        document.addEventListener("dragend", handleDragEnd, true);
+        document.addEventListener("drop", handleDragEnd, true);
+        return () => {
+            document.removeEventListener("dragstart", handleDragStart, true);
+            document.removeEventListener("dragend", handleDragEnd, true);
+            document.removeEventListener("drop", handleDragEnd, true);
+        };
+    }, [open]);
+
     // Each tour step declares which route it belongs to, spotlight should always be live UI
     useEffect(() => {
         if (open && step.path && location.pathname !== step.path) {
             navigate(step.path);
         }
     }, [open, step.path, location.pathname, navigate]);
+
+    // Some exercises need an input/dropdown to remain visible after the user advances from the previous instruction panel
+    // Refocusing reopens its existing results without changing the query they just entered
+    useEffect(() => {
+        if (!open || !step.focusTarget || (step.path && location.pathname !== step.path)) {
+            return;
+        }
+        const target = document.querySelector(step.focusTarget);
+        target?.focus();
+    }, [open, stepIndex, step.focusTarget, step.path, location.pathname]);
 
     // Find the current target and keep the spotlight aligned during resize, scrolling, and React content updates
     useEffect(() => {
@@ -121,8 +223,9 @@ export default function TutorialGuide({ open, onClose }) {
                 targetElements[0]?.scrollIntoView({ block: "nearest", inline: "nearest" });
             }
 
-            setTargetRects(nextTargets.map((element) => {
+            const nextRects = nextTargets.map((element) => {
                 const rect = element.getBoundingClientRect();
+
                 return {
                     left: rect.left,
                     top: rect.top,
@@ -131,12 +234,20 @@ export default function TutorialGuide({ open, onClose }) {
                     width: rect.width,
                     height: rect.height,
                 };
-                })
+            });
+
+            setTargetRects((current) =>
+                sameRectList(current, nextRects) ? current : nextRects
             );
         }
 
         function updateViewport() {
-            setViewport({ width: window.innerWidth, height: window.innerHeight });
+            const nextViewport = { width: window.innerWidth, height: window.innerHeight };
+            setViewport((current) =>
+                current.width === nextViewport.width && current.height === nextViewport.height
+                    ? current
+                    : nextViewport,
+            );
             updateTargets();
         }
 
@@ -161,15 +272,25 @@ export default function TutorialGuide({ open, onClose }) {
         }
 
         function updatePosition() {
-        const panel = panelRef.current?.getBoundingClientRect();
-        setPanelPosition(
-            getPanelPosition(
+            const panel = panelRef.current?.getBoundingClientRect();
+            const nextPosition = getPanelPosition(
                 targetRects[0] ?? null,
                 { width: panel?.width ?? 360, height: panel?.height ?? 230 },
                 viewport,
                 step.placement,
-            ),
-        );
+                step.panelLocation,
+            );
+
+            setPanelPosition((current) => {
+                if (
+                    current &&
+                    Math.abs(current.left - nextPosition.left) < 0.5 &&
+                    Math.abs(current.top - nextPosition.top) < 0.5
+                ) {
+                    return current;
+                }
+                return nextPosition;
+            });
         }
 
         updatePosition();
@@ -179,7 +300,7 @@ export default function TutorialGuide({ open, onClose }) {
             observer.observe(panelRef.current);
         }
         return () => observer?.disconnect();
-    }, [open, targetRects, viewport, step.placement, stepIndex]);
+    }, [open, targetRects, viewport, step.placement, step.panelLocation, stepIndex]);
 
     // Clicking outside the card closes the tour. The spotlight's transparent
     // center lets users interact with the highlighted control before continuing.
@@ -193,41 +314,69 @@ export default function TutorialGuide({ open, onClose }) {
                 return;
             }
 
-            // Keep the guide open when someone uses the highlighted part of the app, clicking anywhere else dismisses it
-            const selectors = step.targets ?? (step.target ? [step.target] : []);
-            const clickedHighlightedTarget = selectors.some((selector) => document.querySelector(selector)?.contains(event.target));
-            if (clickedHighlightedTarget) {
+            // Keep the guide open for both spotlighted elements and any explicitly
+            // permitted interaction areas. The course viewer's backdrop is one such
+            // area: clicking it should close the viewer, not dismiss the tutorial.
+            const spotlightSelectors = step.targets ?? (step.target ? [step.target] : []);
+            const interactionSelectors = [
+                ...spotlightSelectors,
+                ...(step.allowInteractionTargets ?? []),
+            ];
+            const eventPath = typeof event.composedPath === "function" ? event.composedPath() : [];
+            const clickedAllowedTarget = interactionSelectors.some((selector) => {
+                const matchingElement = document.querySelector(selector);
+                return Boolean(
+                    matchingElement &&
+                    (matchingElement === event.target ||
+                        matchingElement.contains(event.target) ||
+                        eventPath.includes(matchingElement))
+                );
+            });
+            if (clickedAllowedTarget) {
                 return;
             }
 
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation?.();
             onClose();
         }
 
         function handleKeyDown(event) {
             if (event.key === "Escape") {
+                // On the course-viewer step, let CourseDetailsPanel handle Escape.
+                // Its window-level listener closes the viewer; the tutorial stays open.
+                if (step.escapeClosesTarget && document.querySelector(step.escapeClosesTarget)) {
+                    return;
+                }
                 onClose();
             }
         }
 
-        document.addEventListener("pointerdown", handlePointerDown);
+        document.addEventListener("pointerdown", handlePointerDown, true);
         document.addEventListener("keydown", handleKeyDown);
         return () => {
-            document.removeEventListener("pointerdown", handlePointerDown);
+            document.removeEventListener("pointerdown", handlePointerDown, true);
             document.removeEventListener("keydown", handleKeyDown);
         };
-    }, [open, onClose, step.target, step.targets]);
+    }, [open, onClose, step.target, step.targets, step.allowInteractionTargets, step.escapeClosesTarget]);
 
     if (!open) return null;
 
     function goBack() {
+        setCompletedTaskActionIds([]);
         setStepIndex((current) => Math.max(0, current - 1));
     }
 
     function goNext() {
+        if (!taskComplete) {
+            return;
+        }
         if (isLastStep) {
             onClose();
             return;
         }
+        setCompletedTaskActionIds([]);
         setStepIndex((current) => Math.min(TUTORIAL_STEPS.length - 1, current + 1));
     }
 
@@ -243,19 +392,21 @@ export default function TutorialGuide({ open, onClose }) {
     return (
         <>
         <svg
-            className="tutorial-scrim"
-            width="100%"
-            height="100%"
+            className={`tutorial-scrim${isDragging ? " tutorial-scrim-dragging" : ""}`}
+            width={viewport.width}
+            height={viewport.height}
             viewBox={`0 0 ${viewport.width} ${viewport.height}`}
             preserveAspectRatio="none"
             aria-hidden="true"
+            pointerEvents="none"
         >
             <path
                 d={`${outerPath}${holePath}`}
                 fill="#07172d"
                 fillOpacity="0.48"
                 fillRule="evenodd"
-                pointerEvents="visiblePainted"
+                /* The SVG is a visual mask only. Never let it become the click target. */
+                pointerEvents="none"
             />
             {spotlights.map((spotlight, index) => (
                 <rect
@@ -300,6 +451,26 @@ export default function TutorialGuide({ open, onClose }) {
             <h2 id="tutorial-title">{step.title}</h2>
             <p id="tutorial-description">{step.description}</p>
             {step.note && <p className="tutorial-note">{step.note}</p>}
+            {step.task && (
+                <div className="tutorial-task">
+                    <div className="tutorial-task-heading">TRY IT YOURSELF</div>
+                    <p className="tutorial-task-prompt">{step.task.prompt}</p>
+                    <ul className="tutorial-task-list">
+                        {taskActions.map((action, index) => {
+                            const complete = completedTaskActionIds.includes(action.id);
+                            return (
+                                <li key={action.id} className={complete ? "complete" : ""}>
+                                    <span className="tutorial-task-check">{complete ? "✓" : index + 1}</span>
+                                    <span>{action.label}</span>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                    <div className={`tutorial-task-status${taskComplete ? " complete" : ""}`} aria-live="polite">
+                        {taskComplete ? "Nice work! You can continue." : "Complete the actions above to unlock Next."}
+                    </div>
+                </div>
+            )}
             </div>
             <div className="tutorial-footer">
             <button
@@ -323,7 +494,7 @@ export default function TutorialGuide({ open, onClose }) {
                     Back
                 </button>
                 )}
-                <button className="tutorial-next-button" type="button" onClick={goNext}>
+                <button className="tutorial-next-button" type="button" onClick={goNext} disabled={!taskComplete}>
                 {step.buttonLabel ?? (isLastStep ? "Finish" : "Next")}
                 <span aria-hidden="true">→</span>
                 </button>

@@ -5,6 +5,7 @@ function ProgressSelection({ handleSelectStatusOption }) {
     <div
       className="select-option-container"
       onClick={(event) => event.stopPropagation()}
+      data-tour="progress-status-options"
     >
       <span>Mark course as...</span>
       <button
@@ -15,6 +16,7 @@ function ProgressSelection({ handleSelectStatusOption }) {
       </button>
       <button
         className="select-button"
+        data-tour="mark-in-progress-option"
         onClick={() => handleSelectStatusOption(CourseStatus.IN_PROGRESS)}
       >
         In-progress

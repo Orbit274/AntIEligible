@@ -1,7 +1,7 @@
 // One class inside a quarter which has its code, title, and units, with a small × to take it out of the plan
 function PlannerCourse({course, selected, onOpen, onRemove, onCourseDragStart}) {
     return (
-        <div className={selected ? "planner-course selected" : "planner-course"}>
+        <div className={selected ? "planner-course selected" : "planner-course"} data-tour={course.id === "COMPSCI161" ? "planner-added-course" : undefined}>
             <button 
                 className="planner-course-open" 
                 onClick={() => onOpen(course)}

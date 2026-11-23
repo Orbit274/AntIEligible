@@ -2,7 +2,16 @@
     position: fixed;
     inset: 0;
     z-index: 9000;
+    display: block;
+    width: 100vw;
+    height: 100vh;
     overflow: visible;
+    pointer-events: none !important;
+}
+
+.tutorial-scrim path,
+.tutorial-scrim rect {
+    pointer-events: none !important;
 }
 
 .tutorial-card {
@@ -192,4 +201,98 @@
         order: 3;
         width: 100%;
     }
+}
+
+.tutorial-scrim-dragging {
+    pointer-events: none !important;
+}
+
+.tutorial-task {
+    margin-top: 12px;
+    padding: 10px 11px;
+    border: 1px solid #d8e7f8;
+    border-radius: 7px;
+    background: #f3f7fd;
+}
+
+.tutorial-task-heading {
+    margin-bottom: 5px;
+    color: #2467b6;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1.1px;
+}
+
+.tutorial-card .tutorial-task-prompt {
+    margin-bottom: 8px;
+    color: #253b57;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+.tutorial-task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.tutorial-task-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: #46566d;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.tutorial-task-check {
+    display: inline-flex;
+    flex: 0 0 16px;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #aabbd0;
+    border-radius: 50%;
+    background: #fff;
+    color: #58708e;
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.tutorial-task-list li.complete {
+    color: #236344;
+}
+
+.tutorial-task-list li.complete .tutorial-task-check {
+    border-color: #36a36c;
+    background: #e4f6eb;
+    color: #187344;
+}
+
+.tutorial-task-status {
+    margin-top: 8px;
+    color: #718096;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.tutorial-task-status.complete {
+    color: #21804f;
+}
+
+.tutorial-next-button:disabled {
+    border-color: #b9c6d7;
+    background: #d4dce7;
+    color: #64748b;
+    cursor: not-allowed;
+    opacity: 0.9;
+}
+
+.tutorial-next-button:disabled:hover {
+    background: #d4dce7;
 }

@@ -17,11 +17,13 @@ import {
     placeCourse
 } from "../planner/plan";
 import { readDraggedCourse, writeDraggedCourse } from "../planner/dragAndDrop";
+import { useTutorialActions } from "./TutorialActionContext";
 
 function Planner() {
   const [plan, setPlan] = useState(emptyPlan);
   const [target, setTarget] = useState("1:Fall");
   const [viewed, setViewed] = useState(null);
+  const { reportTutorialAction } = useTutorialActions();
   const [targetYearText, targetQuarter] = target.split(":");
   const targetYear =
     plan.years.find((year) => year.id === Number(targetYearText)) ??
@@ -44,14 +46,40 @@ function Planner() {
             return;
         }
 
-        const course = typeof result.label === "string" && "units" in result ? result : toPlannedCourse(result);
-        setPlan((current) => {
-            const currentPlacement = findCourse(current, course.id);
-            if (currentPlacement?.yearId === yearId && currentPlacement?.quarter === quarter) {
-                return current;
-            }
-            return placeCourse(current, yearId, quarter, course);
-        });
+        const course = typeof result.label === "string" && "units" in result
+            ? result
+            : toPlannedCourse(result);
+
+        // Find the course's current location from the plan itself. This is
+        // intentionally calculated from the dragged course, not `viewed`,
+        // because a drag can begin from either SearchBar or a planned card.
+        const currentPlacement = findCourse(plan, course.id);
+
+        // Dropping a course into the quarter it already occupies is a no-op.
+        if (
+            currentPlacement?.yearId === yearId &&
+            currentPlacement?.quarter === quarter
+        ) {
+            return;
+        }
+
+        setPlan((current) => placeCourse(current, yearId, quarter, course));
+
+        if (currentPlacement) {
+            reportTutorialAction("planner-course-moved", {
+                courseId: course.id,
+                fromYearId: currentPlacement.yearId,
+                fromQuarter: currentPlacement.quarter,
+                yearId,
+                quarter,
+            });
+        } else {
+            reportTutorialAction("planner-course-added", {
+                courseId: course.id,
+                yearId,
+                quarter,
+            });
+        }
     }
 
     function handleAddViewed() {
@@ -97,6 +125,8 @@ function Planner() {
                       onCourseDragStart={handleCourseDragStart}
                       tourTarget="planner-search-input"
                       tourContainerTarget="planner-search-area"
+                      tourResultTarget="planner-search-result"
+                      tourContext="planner"
                     />
                 </div>
             </div>
