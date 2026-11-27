@@ -18,9 +18,9 @@ import axios from "axios";
 import ZoomControls from "./ZoomControls";
 import GraphLegend from "./GraphLegend";
 import {
-  buildCourseGraph,
   addCourseToWorkspace,
   addFullTreeToWorkspace,
+  courseIdOf,
   removeCourseFromGraph,
 } from "../graph/courseGraph";
 import LogicNode from "./LogicNode";
@@ -34,7 +34,6 @@ import { useTutorialActions } from "./TutorialActionContext";
 import {
   Orientation,
   convertOrientation,
-  fromLeftToRight,
   layoutIn,
 } from "../graph/orientation";
 import {
@@ -52,8 +51,6 @@ const nodeTypes = {
   logicNode: LogicNode,
   infoNode: InfoNode,
 };
-
-const STARTING_COURSE_ID = "COMPSCI161";
 
 async function fetchCourse(id) {
   const response = await axios.get(`/api/course/${encodeURIComponent(id)}`);
@@ -103,18 +100,15 @@ function MainWorkspace({ courseProgress }) {
   const [workspaceKey, setWorkspaceKey] = useState(0);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [status, setStatus] = useState(restoredGraph ? "ready" : "loading");
   const [focusRequest, setFocusRequest] = useState({ ids: [] });
   const [showFullTree, setShowFullTree] = useState(false);
   const [orientation, setOrientation] = useState(loadOrientation);
   // Always the current orientation. Async handlers read this after their fetch
   // (the state value they captured may be stale if the user switched meanwhile),
-  // and showStartingCourse reads it so changing orientation doesn't reload the starting course
   const orientationRef = useRef(orientation);
   const getOrientation = useCallback(() => orientationRef.current, []);
   const flowRef = useRef(null);
   const graphNodeDragStart = useRef(null);
-  const latestLoad = useRef(0);
   const { reportTutorialAction } = useTutorialActions();
 
   function closePanel() {
@@ -126,27 +120,6 @@ function MainWorkspace({ courseProgress }) {
     }
   }
 
-  // Puts the starting course and its prerequisites on the workspace
-  const showStartingCourse = useCallback(
-    (course) => {
-      const graph = fromLeftToRight(
-        buildCourseGraph(course),
-        orientationRef.current,
-      );
-      const appliedCourseStatusGraph = applyCourseStatusFromSidebar(graph, {
-        completedCourses: courseProgress.completed.courses,
-        inprogressCourses: courseProgress.inprogress.courses,
-      });
-      setNodes(appliedCourseStatusGraph.nodes);
-      setEdges(appliedCourseStatusGraph.edges);
-      setWorkspaceKey((key) => key + 1);
-      setFocusRequest({ ids: [] });
-      setSelectedCourse(null);
-      setIsVisible(false);
-      setStatus("ready");
-    },
-    [setNodes, setEdges],
-  );
   /**
    * This function apply the course's status from the course tracker to the graph
    * @param graph : the graph that need to be applied status
@@ -158,73 +131,39 @@ function MainWorkspace({ courseProgress }) {
     { completedCourses, inprogressCourses },
   ) {
     graph.nodes.forEach((node) => {
-      if (completedCourses.has(node.id))
+      if (completedCourses.has(courseIdOf(node)))
         node.data.status = CourseStatus.COMPLETED;
-      if (inprogressCourses.has(node.id))
+      if (inprogressCourses.has(courseIdOf(node)))
         node.data.status = CourseStatus.IN_PROGRESS;
     });
 
     return graph;
   }
-  // Fetches the starting course and replaces the whole workspace with it
-  async function loadStartingCourse() {
-    const thisLoad = ++latestLoad.current;
-    try {
-      const course = await fetchCourse(STARTING_COURSE_ID);
-      if (thisLoad === latestLoad.current) showStartingCourse(course);
-    } catch (err) {
-      if (thisLoad !== latestLoad.current) return;
-      console.error("Failed to load the starting course:", err);
-      setStatus("failed");
-    }
-  }
-
-  // Show the starting course, unless a saved graph was restored
-  useEffect(() => {
-    if (restoredGraph) return;
-    const thisLoad = ++latestLoad.current;
-    fetchCourse(STARTING_COURSE_ID)
-      .then((course) => {
-        if (thisLoad === latestLoad.current) showStartingCourse(course);
-      })
-      .catch((err) => {
-        if (thisLoad !== latestLoad.current) return;
-        console.error("Failed to load the starting course:", err);
-        setStatus("failed");
-      });
-  }, [restoredGraph, showStartingCourse]);
-
   // Save the graph after every change so it survives a page refresh.
-  // Skipped until the graph is ready, so the empty first render never overwrites the saved one,
-  // and while a node is being dragged, so it is written once on drop instead of every frame.
+  // Skipped while a node is being dragged, so it is written once on drop instead of every frame.
   useEffect(() => {
-    const isDragging = nodes.some((node) => node.dragging);
-    if (status !== "ready" || isDragging) return;
+    if (nodes.some((node) => node.dragging)) return;
     saveGraph({ nodes, edges });
-  }, [nodes, edges, status]);
+  }, [nodes, edges]);
 
-  // Used by Reset and "Try again", show "Loading..." and load the starting course again
-  function reload() {
-    setStatus("loading");
-    loadStartingCourse();
-  }
-
+  // Clears the workspace back to an empty graph
   function handleReset() {
-    if (
-      !window.confirm(
-        "Reset the workspace? Added courses and progress marks will be cleared.",
-      )
-    ) {
+    if (!window.confirm("Reset the workspace? Every course on the graph will be removed.")) {
       return;
     }
-    reload();
+    setNodes([]);
+    setEdges([]);
+    setFocusRequest({ ids: [] });
+    setSelectedCourse(null);
+    setIsVisible(false);
+    setWorkspaceKey((key) => key + 1);
   }
 
   function handleNodeClick(event, clickedNode) {
     if (clickedNode.type !== "courseNode") {
       return;
     }
-    const courseCode = clickedNode.id;
+    const courseCode = courseIdOf(clickedNode);
     setSelectedCourse(courseCode);
     setIsVisible(true);
   }
@@ -236,7 +175,6 @@ function MainWorkspace({ courseProgress }) {
       const data = showFullTree
         ? await fetchCourseTree(result.id)
         : await fetchCourse(result.id);
-      latestLoad.current++;
       const flow = flowRef.current;
       const current = flow
         ? { nodes: flow.getNodes(), edges: flow.getEdges() }
@@ -259,7 +197,6 @@ function MainWorkspace({ courseProgress }) {
       setNodes(appliedStatusGraph.nodes);
       setEdges(appliedStatusGraph.edges);
       setFocusRequest({ ids: focusIds });
-      setStatus("ready");
 
       setSelectedCourse(data.id);
       setIsVisible(true);
@@ -284,7 +221,7 @@ function MainWorkspace({ courseProgress }) {
       }
       setNodes(graph.nodes);
       setEdges(graph.edges);
-      if (courses.some((course) => course.id === selectedCourse)) {
+      if (courses.some((course) => courseIdOf(course) === selectedCourse)) {
         setIsVisible(false);
         setSelectedCourse(null);
       }
@@ -471,7 +408,7 @@ function MainWorkspace({ courseProgress }) {
                           start?.id === node.id &&
                           (Math.abs(start.x - node.position.x) > 1 || Math.abs(start.y - node.position.y) > 1)
                         ) {
-                          reportTutorialAction("graph-course-node-moved", { courseId: node.id });
+                          reportTutorialAction("graph-course-node-moved", { courseId: courseIdOf(node) });
                         }
                       }}
                       onMoveEnd={(event) => {
@@ -499,17 +436,7 @@ function MainWorkspace({ courseProgress }) {
                     >
                       <Background />
                       <Panel position="bottom-center">
-                        {status === "loading" && (
-                          <div className="workspace-message">Loading...</div>
-                        )}
-                        {status === "failed" && (
-                          <div className="workspace-message">
-                            Couldn't load the starting course. Is the backend
-                            running?
-                            <button onClick={reload}>Try again</button>
-                          </div>
-                        )}
-                        {status === "ready" && nodes.length === 0 && (
+                        {nodes.length === 0 && (
                           <div className="workspace-message">
                             Search for a class to add it to the workspace.
                           </div>

@@ -252,7 +252,7 @@ export const TUTORIAL_STEPS = [
         path: "/search",
         target: '[data-tour="graph-canvas"]',
         title: "You're ready to explore!",
-        description: "You're back on Search with the starting COMPSCI 161 prerequisite map. The progress change used for this walkthrough has been restored, so the exercise does not change your course records. Search for another target course whenever you're ready, and open Tips in the header for reminders and planning advice.",
+        description: "You're back on Search with the COMPSCI 161 prerequisite map you built. The progress change used for this walkthrough has been restored, so the exercise does not change your course records. Search for another target course whenever you're ready, and open Tips in the header for reminders and planning advice.",
         placement: "top-right",
         buttonLabel: "Finish",
     },

@@ -9,6 +9,7 @@ import "../styles/CourseNode.css";
 import axios from "axios";
 import {
   addCourseToGraph,
+  courseIdOf,
   removePrereqCourseNode,
 } from "../graph/courseGraph.js";
 import {
@@ -24,7 +25,6 @@ import { useTutorialActions } from "./TutorialActionContext.jsx";
 import ConfirmDialog from "./ConfirmDialog.jsx";
 function CourseNode({ id, data }) {
   const {
-    updateNodeData,
     getEdges,
     getNodes,
     setNodes,
@@ -41,6 +41,8 @@ function CourseNode({ id, data }) {
   } = useCourseContext();
   const { reportTutorialAction } = useTutorialActions();
   const topDown = orientation === Orientation.TOP_DOWN;
+  // `id` is this card, the same course can have several cards in different trees
+  const courseId = courseIdOf({ id, data });
 
   // Subscribe to the live graph so the eligibility count recomputes whenever
   // any prerequisite's status changes.
@@ -100,7 +102,7 @@ function CourseNode({ id, data }) {
     const opening = !showSelecteOption;
     setShowSelectOption(!showSelecteOption);
     if (opening) {
-      reportTutorialAction("course-status-menu-opened", { courseId: id });
+      reportTutorialAction("course-status-menu-opened", { courseId });
     }
   }
 
@@ -120,7 +122,7 @@ function CourseNode({ id, data }) {
   }
 
   async function expandToggleHandler() {
-    const course = await fetchCurrentCourseById(id);
+    const course = await fetchCurrentCourseById(courseId);
     if (!course || !getNode(id)) return;
     // Layout runs left-to-right; layoutIn converts in and out of top-down.
     // Read the orientation after the fetch: the user may have switched while it loaded,
@@ -130,10 +132,12 @@ function CourseNode({ id, data }) {
       { nodes: getNodes(), edges: getEdges() },
       (ltr) => {
         const thisNode = ltr.nodes.find((n) => n.id === id);
-        return addCourseToGraph(ltr, course, {
-          x: thisNode.position.x,
-          y: thisNode.position.y,
-        });
+        return addCourseToGraph(
+          ltr,
+          course,
+          { x: thisNode.position.x, y: thisNode.position.y },
+          id,
+        );
       },
     );
     const appliedCourseStatusGraph = applyCourseStatusFromSidebar(graph, {
@@ -165,21 +169,26 @@ function CourseNode({ id, data }) {
 
     if (data.isExpanded) {
       collapseToggleHandler();
-      reportTutorialAction("course-branch-collapsed", { courseId: id });
+      reportTutorialAction("course-branch-collapsed", { courseId });
     } else {
       const expanded = await expandToggleHandler();
       if (expanded) {
-        reportTutorialAction("course-branch-expanded", { courseId: id });
+        reportTutorialAction("course-branch-expanded", { courseId });
       }
     }
   }
 
   function applyStatus(status) {
-    updateNodeData(id, {
-      status: status,
-    });
-    handleSideBarCourse({ id, data: { ...data, status: status } });
-    reportTutorialAction("course-status-updated", { courseId: id, status });
+    // Every card of this course gets the status, not just this one
+    setNodes((nodes) =>
+      nodes.map((node) =>
+        courseIdOf(node) === courseId
+          ? { ...node, data: { ...node.data, status } }
+          : node,
+      ),
+    );
+    handleSideBarCourse({ id: courseId, data: { ...data, status: status } });
+    reportTutorialAction("course-status-updated", { courseId, status });
   }
 
   function handleSelectStatusOption(status) {
@@ -198,17 +207,17 @@ function CourseNode({ id, data }) {
   }
 
   return (
-    <div key={id} ref={tabRef} className={`course-node-container ${data.status} border-${eligibilityClass} orient-${orientation}`} data-tour={id === "COMPSCI161" ? "root-course-node" : undefined}>
+    <div key={id} ref={tabRef} className={`course-node-container ${data.status} border-${eligibilityClass} orient-${orientation}`} data-tour={courseId === "COMPSCI161" ? "root-course-node" : undefined}>
       {/* Prerequisites connect in on the side they're laid out on, the course this one feeds sits on the opposite side */}
       <Handle type="target" position={topDown ? Position.Bottom : Position.Right} />
       <div className="node">
         <div className="node-course-title-container">
           <span id="course-id">{data.label}</span>
         </div>
-        <button className="progress nodrag nopan" onClick={handleChangeStatus} data-tour={id === "COMPSCI161" ? "root-progress-control" : undefined}>
+        <button className="progress nodrag nopan" onClick={handleChangeStatus} data-tour={courseId === "COMPSCI161" ? "root-progress-control" : undefined}>
           <img src={`../images/${data.status}-status.png`}></img>
         </button>
-        <button className="branch-toggle" onClick={handleBranchToggle} data-tour={id === "COMPSCI161" ? "root-expand-control" : undefined}>
+        <button className="branch-toggle" onClick={handleBranchToggle} data-tour={courseId === "COMPSCI161" ? "root-expand-control" : undefined}>
           <img src={`/images/${branchToggleAction}-branch-arrow.png`}></img>
         </button>
       </div>

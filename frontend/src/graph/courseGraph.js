@@ -16,8 +16,23 @@ export function makeNode(id, label, x, y, status = "not-started") {
     id,
     type: "courseNode",
     position: { x, y },
-    data: { label, status, isExpanded : false},
+    data: { label, status, isExpanded : false, courseId: id },
   };
+}
+
+// The course a node stands for. Usually its id, but a course can be on the workspace
+// more than once, and the extra cards get ids like "COMPSCI161#2"
+export function courseIdOf(node) {
+  return node.data?.courseId ?? node.id;
+}
+
+// `base`, or `base#2`, `base#3`... whichever isn't taken yet
+function freshId(base, taken) {
+  let id = base;
+  for (let copy = 2; taken.has(id); copy++) {
+    id = `${base}#${copy}`;
+  }
+  return id;
 }
 
 // The small "OR" circle, many options feed into it and one line leaves it toward the course
@@ -28,7 +43,7 @@ export function makeLogicNode(id, x, y) {
 // A box for something that isn't a course we can open like an exam
 // Starts not satisfied; the student ticks its checkbox once they have the credit
 export function makeInfoNode(id, label, x, y, kind) {
-  return { id, type: "infoNode", position: { x, y }, data: { label, kind, satisfied: false } };
+  return { id, type: "infoNode", position: { x, y }, data: { label, kind, satisfied: false, courseId: id } };
 }
 
 export function removePrereqCourseNode(graph, courseId) {
@@ -102,17 +117,12 @@ export function makeEdge(prereqId, courseId) {
 const DASHED = { strokeDasharray: "6 4" };
 
 // One solid edge per course in the flat list (no AND/OR information)
-function addFlatPrerequisites(nodes, edges, course, origin) {
-  const prereqs = course.prerequisites ?? [];
+function addFlatPrerequisites(nodes, edges, target, prereqs, origin) {
   prereqs.forEach((p, i) => {
-    if (!nodes.some((n) => n.id === p.id)) {
-      const y = origin.y + (i - (prereqs.length - 1) / 2) * ROW_GAP;
-      nodes.push(makeNode(p.id, `${p.department} ${p.course_number}`, origin.x + COLUMN_GAP, y));
-    }
-    const edge = makeEdge(p.id, course.id);
-    if (!edges.some((e) => e.id === edge.id)) {
-      edges.push(edge);
-    }
+    const y = origin.y + (i - (prereqs.length - 1) / 2) * ROW_GAP;
+    const leaf = { type: "course", id: p.id, label: `${p.department} ${p.course_number}` };
+    const prereqId = pushLeafNode(nodes, leaf, origin.x + COLUMN_GAP, y, target.treeId);
+    pushEdge(edges, makeEdge(prereqId, target.id));
   });
 }
 
@@ -123,23 +133,28 @@ function pushEdge(edges, edge) {
   }
 }
 
-// A node for one leaf of the tree (a course or an exam), created only if it isn't on the graph yet
-function pushLeafNode(nodes, leaf, x, y) {
-  if (nodes.some((n) => n.id === leaf.id)){
-    return;
+// The node for one leaf of the tree (a course or an exam), returns its id
+// Reuses a card for the same course only inside the same tree, cards from other trees get a new copy
+function pushLeafNode(nodes, leaf, x, y, treeId) {
+  const existing = nodes.find((n) => courseIdOf(n) === leaf.id && n.data?.treeId === treeId);
+  if (existing) {
+    return existing.id;
   }
-  if (leaf.type === "exam") {
-    nodes.push(makeInfoNode(leaf.id, leaf.label, x, y, "exam"));
-  } else {
-    nodes.push(makeNode(leaf.id, leaf.label, x, y));
-  }
+  const id = freshId(leaf.id, new Set(nodes.map((n) => n.id)));
+  const node = leaf.type === "exam"
+    ? makeInfoNode(id, leaf.label, x, y, "exam")
+    : makeNode(id, leaf.label, x, y);
+  node.data.courseId = leaf.id;
+  node.data.treeId = treeId;
+  nodes.push(node);
+  return id;
 }
 
 // Lays the requirements out in two columns to the right of the course
 // column 1 has single required courses, and the OR circles
 // column 2 has the options that feed each OR circle
 // Each requirement gets its own block of rows so different OR groups never overlap
-function addTreePrerequisites(nodes, edges, course, required, origin) {
+function addTreePrerequisites(nodes, edges, target, required, origin) {
   let nextRow = 0;
   const placed = required.map((item) => {
     const rows = item.type === "oneOf" ? item.options.length : 1;
@@ -156,20 +171,22 @@ function addTreePrerequisites(nodes, edges, course, required, origin) {
   placed.forEach(({ item, rows, top }, index) => {
     const y = offset + top;
     if (item.type !== "oneOf") {
-      pushLeafNode(nodes, item, column1, y);
-      pushEdge(edges, { ...makeEdge(item.id, course.id), data: { minGrade: item.minGrade, coreq: item.coreq ?? false } });
+      const prereqId = pushLeafNode(nodes, item, column1, y, target.treeId);
+      pushEdge(edges, { ...makeEdge(prereqId, target.id), data: { minGrade: item.minGrade, coreq: item.coreq ?? false } });
       return;
     }
     
-    const orId = `or:${course.id}:${index}`;
+    const orId = `or:${target.id}:${index}`;
     if (!nodes.some((n) => n.id === orId)) {
-      nodes.push(makeLogicNode(orId, column1, y + ((rows - 1) / 2) * LOGIC_ROW_GAP));
+      const orNode = makeLogicNode(orId, column1, y + ((rows - 1) / 2) * LOGIC_ROW_GAP);
+      orNode.data.treeId = target.treeId;
+      nodes.push(orNode);
     }
-    pushEdge(edges, makeEdge(orId, course.id));
+    pushEdge(edges, makeEdge(orId, target.id));
     item.options.forEach((option, i) => {
-      pushLeafNode(nodes, option, column2, y + i * LOGIC_ROW_GAP);
+      const optionId = pushLeafNode(nodes, option, column2, y + i * LOGIC_ROW_GAP, target.treeId);
       pushEdge(edges, {
-        ...makeEdge(option.id, orId),
+        ...makeEdge(optionId, orId),
         style: DASHED,
         data: { minGrade: option.minGrade, coreq: option.coreq ?? false },
       });
@@ -178,26 +195,29 @@ function addTreePrerequisites(nodes, edges, course, required, origin) {
 }
 
 // Adds a course and its direct prerequisites to a graph and returns a new graph
-// Course that is already in the graph is reused
+// nodeId is the course's card, reused if it's already in the graph (expanding a node passes its own id)
 // New prerequisites are placed one column to the right
-export function addCourseToGraph(graph, course, origin = { x: 0, y: 0 }) {
+export function addCourseToGraph(graph, course, origin = { x: 0, y: 0 }, nodeId = course.id) {
   const nodes = [...graph.nodes];
   const edges = [...graph.edges];
-  const hasNode = (id) => nodes.some((n) => n.id === id);
 
-  if (!hasNode(course.id)) {
-    nodes.push(makeNode(course.id, `${course.department} ${course.course_number}`, origin.x, origin.y));
+  let courseNode = nodes.find((n) => n.id === nodeId);
+  if (!courseNode) {
+    courseNode = makeNode(nodeId, `${course.department} ${course.course_number}`, origin.x, origin.y);
+    courseNode.data.courseId = course.id;
+    nodes.push(courseNode);
   }
+  const target = { id: nodeId, treeId: courseNode.data.treeId };
 
   const parsed = parsePrereqTree(course.prerequisite_tree);
   if (parsed) {
-    addTreePrerequisites(nodes, edges, course, parsed.required, origin);
+    addTreePrerequisites(nodes, edges, target, parsed.required, origin);
   } else {
-    addFlatPrerequisites(nodes, edges, course, origin);
+    addFlatPrerequisites(nodes, edges, target, course.prerequisites ?? [], origin);
   }
 
   //First node will initially expand 
-  const expandedIndex = nodes.findIndex((n) => n.id === course.id);
+  const expandedIndex = nodes.findIndex((n) => n.id === nodeId);
   if (expandedIndex !== -1) {
     nodes[expandedIndex] = {
       ...nodes[expandedIndex],
@@ -207,24 +227,50 @@ export function addCourseToGraph(graph, course, origin = { x: 0, y: 0 }) {
   return { nodes, edges };
 }
 
-// Adds a course to the current workspace instead of replacing it
-export function addCourseToWorkspace(graph, course) {
-  const existing = graph.nodes.find((n) => n.id === course.id);
-  let origin;
-  if (existing) {
-    origin = existing.position;
-  } else if (graph.nodes.length === 0) {
-    origin = {x: 0, y: 0};
-  } else {
-    const alone = buildCourseGraph(course);
-    const topOfNewTree = Math.min(...alone.nodes.map((n) => n.position.y));
+// Puts a separately built tree below everything on the workspace, as its own tree
+// It never connects to cards already there: a course that's already on the workspace gets
+// a new card ("COMPSCI161#2"), so every searched course keeps its own tidy layout
+// Returns the merged graph, the root's new id, and the ids of every added node
+function appendTree(graph, tree, rootId) {
+  let dy = 0;
+  if (graph.nodes.length > 0) {
+    const topOfNewTree = Math.min(...tree.nodes.map((n) => n.position.y));
     const bottomOfWorkspace = Math.max(...graph.nodes.map((n) => n.position.y)) + NODE_HEIGHT;
-    origin = {x: 0, y: bottomOfWorkspace + TREE_GAP - topOfNewTree};
+    dy = bottomOfWorkspace + TREE_GAP - topOfNewTree;
   }
-  const merged = pinNode(addCourseToGraph(graph, course, origin), course.id);
-  const oldIds = new Set(graph.nodes.map((n) => n.id));
-  const newIds = merged.nodes.filter((n) => !oldIds.has(n.id)).map((n) => n.id);
-  return {graph: merged, focusIds: [...new Set([course.id, ...newIds])]};
+
+  const taken = new Set(graph.nodes.map((n) => n.id));
+  const rename = new Map();
+  tree.nodes.forEach((n) => {
+    const id = freshId(n.id, taken);
+    taken.add(id);
+    rename.set(n.id, id);
+  });
+  // The root's id marks which tree every node belongs to, expanding a node reuses cards from its own tree only
+  const treeId = rename.get(rootId);
+
+  const newNodes = tree.nodes.map((n) => ({
+    ...n,
+    id: rename.get(n.id),
+    position: { x: n.position.x, y: n.position.y + dy },
+    data: { ...n.data, treeId },
+  }));
+  const newEdges = tree.edges.map((e) => {
+    const source = rename.get(e.source);
+    const target = rename.get(e.target);
+    return { ...e, id: `${source}->${target}`, source, target };
+  });
+  return {
+    graph: { nodes: [...graph.nodes, ...newNodes], edges: [...graph.edges, ...newEdges] },
+    rootId: treeId,
+    newIds: newNodes.map((n) => n.id),
+  };
+}
+
+// Adds a course and its first layer of prerequisites to the current workspace instead of replacing it
+export function addCourseToWorkspace(graph, course) {
+  const { graph: merged, newIds } = appendTree(graph, buildCourseGraph(course), course.id);
+  return { graph: merged, focusIds: newIds };
 }
 
 // Builds the whole prerequisite tree from /api/course-tree
@@ -325,24 +371,9 @@ export function buildFullCourseGraph(tree) {
 }
 
 // Adds a course's whole prerequisite tree to the current workspace, placed below what's already there
-// Courses already on the workspace are reused, only the new ones are placed
 export function addFullTreeToWorkspace(graph, tree) {
-  const full = buildFullCourseGraph(tree);
-  const oldIds = new Set(graph.nodes.map((n) => n.id));
-  let dy = 0;
-  if (graph.nodes.length > 0) {
-    const topOfNewTree = Math.min(...full.nodes.map((n) => n.position.y));
-    const bottomOfWorkspace = Math.max(...graph.nodes.map((n) => n.position.y)) + NODE_HEIGHT;
-    dy = bottomOfWorkspace + TREE_GAP - topOfNewTree;
-  }
-  const newNodes = full.nodes
-    .filter((n) => !oldIds.has(n.id))
-    .map((n) => ({ ...n, position: { x: n.position.x, y: n.position.y + dy } }));
-  const edges = [...graph.edges];
-  full.edges.forEach((edge) => pushEdge(edges, edge));
-
-  const merged = pinNode({ nodes: [...graph.nodes, ...newNodes], edges }, tree.id);
-  return { graph: merged, focusIds: [...new Set([tree.id, ...newNodes.map((n) => n.id)])] };
+  const { graph: merged, rootId, newIds } = appendTree(graph, buildFullCourseGraph(tree), tree.id);
+  return { graph: pinNode(merged, rootId), focusIds: newIds };
 }
 
 // Clear the workspace, same function, start from an empty graph
